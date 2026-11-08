@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code (개인 설정은 커밋하지 않음)
+.claude/settings.local.json
+
+# 환경 변수
+.env
+.env.*
+!.env.example

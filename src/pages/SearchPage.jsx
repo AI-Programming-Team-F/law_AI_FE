@@ -1,16 +1,24 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { MOCK_SEARCH_RESULTS } from "../api/mock";
 import BillCard from "../components/BillCard";
 import Icon from "../components/Icon";
+import { LogoMark } from "../components/Logo";
 
-const EXAMPLE_QUERIES = ["월세 지원금", "전세사기", "청년 교통혜택"];
+const EXAMPLE_QUERIES = [
+  "월세 지원금",
+  "전세사기",
+  "청년 교통혜택",
+  "임차인 보호",
+];
 
 export default function SearchPage({
   query,
   setQuery,
-  selectedIds,
-  setSelectedIds,
+  onGoHome,
+  selectedBills,
+  onToggleCompare,
+  savedBills,
+  onToggleSave,
 }) {
   const [input, setInput] = useState(query);
   const [inputError, setInputError] = useState("");
@@ -23,10 +31,10 @@ export default function SearchPage({
       .toLowerCase();
     return terms.some((term) => text.includes(term));
   });
-  const selectedBills = selectedIds.map((id) =>
-    MOCK_SEARCH_RESULTS.results.find((bill) => bill.bill_no === id),
-  );
+  const selectedIds = selectedBills.map((bill) => bill.bill_no);
+  const savedIds = savedBills.map((bill) => bill.bill_no);
 
+  // 다시 검색해도 비교 바구니는 비우지 않습니다. 다른 키워드의 법안끼리도 비교할 수 있습니다.
   function search(value) {
     const nextQuery = value.trim();
     if (!nextQuery) {
@@ -36,35 +44,33 @@ export default function SearchPage({
     setInput(nextQuery);
     setQuery(nextQuery);
     setInputError("");
-    setSelectedIds([]);
-  }
-
-  function toggleBill(id) {
-    setSelectedIds((previous) => {
-      if (previous.includes(id)) return previous.filter((item) => item !== id);
-      return previous.length < 2 ? [...previous, id] : previous;
-    });
   }
 
   return (
-    <div className={`search-page${selectedIds.length ? " has-selection" : ""}`}>
+    <div className="search-page">
       <section
-        className="search-hero page-width"
+        className={`search-hero page-width${query ? " is-compact" : ""}`}
         aria-labelledby="search-heading"
       >
-        <span className="eyebrow">
-          <span className="eyebrow-line" />
-          일상에 닿는 법률안
-        </span>
-        <h1 id="search-heading">
-          어려운 법률안도,
-          <br />
-          <span>내 일상의 언어로.</span>
+        <h1 id="search-heading" className="hero-title">
+          {query ? (
+            <button
+              type="button"
+              className="hero-home"
+              onClick={onGoHome}
+              aria-label="법안잇다 홈으로"
+            >
+              <LogoMark size={48} />
+              법안잇다
+            </button>
+          ) : (
+            <>
+              <LogoMark size={92} />
+              법안잇다
+            </>
+          )}
         </h1>
-        <p className="hero-description">
-          궁금한 키워드로 법안을 찾고,
-          <br className="mobile-break" /> AI 요약과 비교로 쉽게 살펴보세요.
-        </p>
+        <p className="hero-tagline">유사 법률안을 찾고, 연결하다</p>
         <form
           className="search-form"
           onSubmit={(event) => {
@@ -84,13 +90,12 @@ export default function SearchPage({
               setInput(event.target.value);
               setInputError("");
             }}
-            placeholder="어떤 법률안이 궁금하세요?"
+            placeholder="찾고 싶은 법률안이나 키워드를 입력하세요"
             aria-invalid={Boolean(inputError)}
-            aria-describedby={inputError ? "query-error" : "search-examples"}
+            aria-describedby={inputError ? "query-error" : undefined}
           />
-          <button className="button button-primary" type="submit">
+          <button className="button button-navy" type="submit">
             검색
-            <Icon name="arrow" size={17} />
           </button>
         </form>
         {inputError && (
@@ -98,128 +103,137 @@ export default function SearchPage({
             {inputError}
           </p>
         )}
-        <div className="example-queries" id="search-examples">
-          <span>이런 키워드는 어때요?</span>
-          {EXAMPLE_QUERIES.map((example) => (
-            <button key={example} type="button" onClick={() => search(example)}>
-              {example}
-              <span aria-hidden="true">↗</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className="results-section page-width"
-        aria-labelledby="results-heading"
-      >
-        <div className="demo-note">
-          <Icon name="info" size={16} />
-          <span>
-            UI 미리보기 · 아래 내용은 실제 법률안 정보가 아닌 예시 데이터입니다.
-          </span>
-        </div>
-        <div className="results-heading">
-          <div>
-            <span className="section-kicker">SEARCH RESULTS</span>
-            <h2 id="results-heading">
-              ‘{query}’ 검색 결과 <span>{results.length}</span>
-            </h2>
-          </div>
-          <span className="sort-label">
-            <Icon name="sort" size={16} />
-            관련도순
-          </span>
-        </div>
-        <p className="selection-help" id="selection-help">
-          궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요.
-        </p>
-        <div className="sr-only" role="status" aria-live="polite">
-          검색 결과 {results.length}건. 비교할 법안 {selectedIds.length}개
-          선택됨.
-        </div>
-        {results.length ? (
-          <div className="bill-list">
-            {results.map((bill) => (
-              <BillCard
-                key={bill.bill_no}
-                bill={bill}
-                selected={selectedIds.includes(bill.bill_no)}
-                disabled={
-                  selectedIds.length === 2 &&
-                  !selectedIds.includes(bill.bill_no)
-                }
-                onToggle={() => toggleBill(bill.bill_no)}
-              />
+        {query && (
+          <div className="example-queries">
+            <span>이런 키워드는 어때요?</span>
+            {EXAMPLE_QUERIES.map((example) => (
+              <button
+                key={example}
+                type="button"
+                onClick={() => search(example)}
+              >
+                {example}
+              </button>
             ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <span className="empty-icon">
-              <Icon name="search" size={28} />
-            </span>
-            <h3>검색 결과가 없어요</h3>
-            <p>
-              다른 키워드로 검색해 보세요.
-              <br />
-              미리보기에서는 ‘월세 지원금’ 예시를 확인할 수 있어요.
-            </p>
-            <button
-              className="button button-soft"
-              onClick={() => search("월세 지원금")}
-            >
-              예시 검색해 보기
-            </button>
           </div>
         )}
       </section>
 
-      {selectedIds.length > 0 && (
-        <aside className="compare-dock" aria-label="비교할 법률안">
-          <div className="dock-info">
-            <span className="dock-icon">
-              <Icon name="compare" size={21} />
+      {!query && (
+        <section className="feature-grid page-width" aria-label="서비스 소개">
+          <article className="feature-card">
+            <span className="feature-icon">
+              <Icon name="documents" size={56} />
             </span>
-            <div>
-              <strong>
-                비교할 법안 <span>{selectedIds.length}/2</span>
-              </strong>
-              <p>
-                {selectedIds.length === 2
-                  ? "선택한 두 법안을 나란히 살펴보세요."
-                  : "법안을 하나 더 선택해 주세요."}
-              </p>
+            <h2>유사 법안 추천</h2>
+            <p>
+              키워드와 관련 있는 법률안을
+              <br />
+              관련도 순으로 찾아드립니다.
+            </p>
+            <span className="feature-pill">AI 요약으로 빠르게 파악</span>
+          </article>
+          <article className="feature-card">
+            <span className="feature-icon">
+              <Icon name="scale" size={56} />
+            </span>
+            <h2>핵심 비교</h2>
+            <ul>
+              <li>두 법안의 비슷한 내용</li>
+              <li>각 법안에만 있는 내용</li>
+              <li>공통점과 차이점 AI 요약</li>
+            </ul>
+          </article>
+          <article className="feature-card">
+            <span className="feature-icon">
+              <Icon name="tag" size={56} />
+            </span>
+            <h2>추천 키워드</h2>
+            <p>눌러서 바로 검색해 보세요.</p>
+            <div className="feature-tags">
+              {EXAMPLE_QUERIES.map((example) => (
+                <button
+                  key={example}
+                  type="button"
+                  onClick={() => search(example)}
+                >
+                  {example}
+                </button>
+              ))}
             </div>
+          </article>
+        </section>
+      )}
+
+      {query && (
+        <section
+          className="results-section page-width"
+          aria-labelledby="results-heading"
+        >
+          <div className="demo-note">
+            <Icon name="info" size={16} />
+            <span>
+              UI 미리보기 · 아래 내용은 실제 법률안 정보가 아닌 예시
+              데이터입니다.
+            </span>
           </div>
-          <div className="selected-bills">
-            {selectedBills.map((bill, index) => (
-              <button
-                key={bill.bill_no}
-                onClick={() => toggleBill(bill.bill_no)}
-                aria-label={`${bill.bill_name} 비교 선택 해제`}
-                title={bill.bill_name}
-              >
-                <span>{index + 1}</span>
-                <span className="selected-name">{bill.bill_name}</span>
-                <Icon name="close" size={14} />
-              </button>
-            ))}
+          <div className="results-heading">
+            <div>
+              <span className="section-kicker">SEARCH RESULTS</span>
+              <h2 id="results-heading">
+                ‘{query}’ 검색 결과 <span>{results.length}</span>
+              </h2>
+            </div>
+            <span className="sort-label">
+              <Icon name="sort" size={16} />
+              관련도순
+            </span>
           </div>
-          {selectedIds.length === 2 ? (
-            <Link
-              className="button button-primary"
-              to={`/compare?${new URLSearchParams({ a: selectedIds[0], b: selectedIds[1] })}`}
-            >
-              비교하기
-              <Icon name="arrow" size={17} />
-            </Link>
+          <p className="selection-help" id="selection-help">
+            궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요.
+            다른 키워드로 검색해서 담아도 돼요.
+          </p>
+          <div className="sr-only" role="status" aria-live="polite">
+            검색 결과 {results.length}건. 비교할 법안 {selectedIds.length}개
+            선택됨.
+          </div>
+          {results.length ? (
+            <div className="bill-list">
+              {results.map((bill) => (
+                <BillCard
+                  key={bill.bill_no}
+                  bill={bill}
+                  selected={selectedIds.includes(bill.bill_no)}
+                  disabled={
+                    selectedIds.length === 2 &&
+                    !selectedIds.includes(bill.bill_no)
+                  }
+                  onToggle={() => onToggleCompare(bill)}
+                  saved={savedIds.includes(bill.bill_no)}
+                  onToggleSave={() => onToggleSave(bill)}
+                />
+              ))}
+            </div>
           ) : (
-            <button className="button button-primary" disabled>
-              비교하기
-              <Icon name="arrow" size={17} />
-            </button>
+            <div className="empty-state">
+              <span className="empty-icon">
+                <Icon name="search" size={28} />
+              </span>
+              <h3>검색 결과가 없어요</h3>
+              <p>
+                다른 키워드로 검색해 보세요.
+                <br />
+                미리보기에서는 ‘월세 지원금’ 예시를 확인할 수 있어요.
+              </p>
+              <button
+                className="button button-soft"
+                onClick={() => search("월세 지원금")}
+              >
+                예시 검색해 보기
+              </button>
+            </div>
           )}
-        </aside>
+        </section>
       )}
     </div>
   );
