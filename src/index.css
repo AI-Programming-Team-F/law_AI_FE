@@ -8,7 +8,9 @@
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.65;
   font-weight: 400;
-  --primary: #2858d4;
+  --primary: #3a66e0;
+  --navy: #1f3a8a;
+  --ink: #141c33;
   --muted: #64748b;
   --border: #e0e7ef;
 }

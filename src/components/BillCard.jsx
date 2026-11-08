@@ -34,7 +34,14 @@ function Highlight({ text, keywords }) {
     );
 }
 
-export default function BillCard({ bill, selected, disabled, onToggle }) {
+export default function BillCard({
+  bill,
+  selected,
+  disabled,
+  onToggle,
+  saved,
+  onToggleSave,
+}) {
   return (
     <article
       className={`bill-card${selected ? " is-selected" : ""}`}
@@ -42,7 +49,19 @@ export default function BillCard({ bill, selected, disabled, onToggle }) {
     >
       <div className="card-topline">
         <StatusBadge status={bill.status} />
-        <span className="bill-number">의안번호 {bill.bill_no}</span>
+        <div className="card-actions">
+          <span className="bill-number">의안번호 {bill.bill_no}</span>
+          <button
+            type="button"
+            className={`save-button${saved ? " is-saved" : ""}`}
+            onClick={onToggleSave}
+            aria-pressed={saved}
+            aria-label={`${bill.bill_name} ${saved ? "저장 취소" : "저장하기"}`}
+          >
+            <Icon name={saved ? "bookmarkFilled" : "bookmark"} size={17} />
+            <span>{saved ? "저장됨" : "저장"}</span>
+          </button>
+        </div>
       </div>
       <h3 id={`bill-${bill.bill_no}`}>
         <a
