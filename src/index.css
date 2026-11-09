@@ -1,18 +1,42 @@
 :root {
-  font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-  color: #202d41;
-  background: #f7f9fc;
+  /* 어두운 바탕 */
+  --bg: #172029;
+  --bg-raise: #1d2833;
+  --bg-hover: #26333f;
+  --line-dark: #2f3d4a;
+  --on-dark: #e6ebf0;
+  --on-dark-muted: #a3b2c0;
+
+  /* 밝은 종이(카드) */
+  --paper: #e6eaf0;
+  --paper-hi: #f5f7fa;
+  --ink: #16202a;
+  --ink-muted: #475564;
+  --line-paper: #c3ccd6;
+  --control-line: #6f7d8b;
+
+  /* 강조색 */
+  --steel: #3e5a72;
+  --steel-deep: #2f475c;
+  --mint: #cfe6df;
+  --mint-hover: #bcdcd2;
+
+  /* 로고 사슬: 철청색(밝게) + 민트 */
+  --logo-a: #7896b0;
+  --logo-b: var(--mint);
+
+  font-family:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: var(--on-dark);
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.65;
+  line-height: 1.6;
   font-weight: 400;
-  --primary: #3a66e0;
-  --navy: #1f3a8a;
-  --ink: #141c33;
-  --muted: #64748b;
-  --border: #e0e7ef;
+  scroll-padding-bottom: 160px;
 }
 * {
   box-sizing: border-box;
@@ -20,20 +44,19 @@
 body {
   margin: 0;
   min-width: 360px;
+  background: var(--bg);
 }
 button,
 input {
   font: inherit;
+  color: inherit;
 }
 button,
 a,
 input {
   -webkit-tap-highlight-color: transparent;
-  outline-offset: 4px;
-}
-button,
-input {
-  color: inherit;
+  outline-offset: 3px;
+  touch-action: manipulation;
 }
 button {
   cursor: pointer;
@@ -47,17 +70,23 @@ a {
   text-decoration: none;
 }
 :focus-visible {
-  outline: 3px solid #7197f8;
+  outline: 3px solid var(--mint);
 }
 h1,
 h2,
 h3,
-p {
+p,
+dl,
+dd {
   margin: 0;
 }
 h1,
 h2,
 h3 {
+  word-break: keep-all;
+  text-wrap: balance;
+}
+p {
   word-break: keep-all;
 }
 svg {
@@ -65,11 +94,20 @@ svg {
   flex-shrink: 0;
 }
 mark {
-  background: #eaf0ff;
-  color: #244eb6;
-  border-radius: 3px;
+  background: var(--mint);
+  color: var(--ink);
+  border-radius: 2px;
   padding: 0 2px;
 }
 ::selection {
-  background: #dce7ff;
+  background: var(--mint);
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

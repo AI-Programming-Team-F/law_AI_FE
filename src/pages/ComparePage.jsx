@@ -46,7 +46,6 @@ export default function ComparePage() {
       <Link className="back-link" to="/">
         ← 법률안 검색으로
       </Link>
-      <span className="section-kicker">SIDE BY SIDE</span>
       <h1>두 법안, 어떤 점이 다를까요?</h1>
       <p className="compare-intro">
         핵심 내용부터 차이점까지 나란히 살펴보세요.
@@ -91,7 +90,6 @@ export default function ComparePage() {
       {hasComparison ? (
         <>
           <section className="comparison-section common-section">
-            <span className="section-kicker">IN COMMON</span>
             <h2>비슷한 내용</h2>
             <ul>
               {mock.common.map((line) => (
@@ -103,7 +101,6 @@ export default function ComparePage() {
             </small>
           </section>
           <section className="comparison-section">
-            <span className="section-kicker">DIFFERENCES</span>
             <h2>이런 점이 달라요</h2>
             <div className="comparison-grid differences">
               {[

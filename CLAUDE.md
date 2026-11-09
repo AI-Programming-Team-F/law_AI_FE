@@ -19,13 +19,15 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 - 검색어·비교 바구니·저장 목록은 [src/App.jsx](src/App.jsx)의 `useState`로 들고 props로 넘깁니다 (Context 아님).
   - 비교 바구니(`selectedBills`)는 의안번호가 아니라 **법안 객체**를 담습니다. 다시 검색해도 비우지 않습니다 (다른 키워드 법안끼리 비교 가능).
   - 저장 목록(`savedBills`)은 localStorage(`beopan-itda:saved-bills`)에 보관합니다. 서버 API 없음.
-  - 로고 클릭 시 `goHome()`이 검색어를 비우고 `SearchPage`를 `key`로 새로 그려 첫 화면으로 돌아갑니다.
+  - 사이드바 로고나 홈 화면 가운데 `법안잇다` 제목을 누르면 `goHome()`이 검색어를 비우고 `SearchPage`를 `key`로 새로 그려 첫 화면으로 돌아갑니다.
 - 하단 비교 바구니는 [src/components/CompareTray.jsx](src/components/CompareTray.jsx)로, App에서 `/compare`를 뺀 모든 화면에 띄웁니다.
 - 저장한 법안 화면: [src/pages/SavedPage.jsx](src/pages/SavedPage.jsx) (`/saved`).
 - `StatusBadge`는 [src/components/BillCard.jsx](src/components/BillCard.jsx) 안에서 named export 됩니다. 아이콘은 [src/components/Icon.jsx](src/components/Icon.jsx).
 - 레이아웃: 왼쪽 사이드바(로고 + `유사법안 검색`·`저장한 법안` 메뉴) + 오른쪽 본문. 760px 이하에서는 사이드바가 상단 가로 바로 바뀝니다. 비교 화면은 검색 결과에서 들어가므로 메뉴에 따로 두지 않습니다.
-- 로고는 [src/components/Logo.jsx](src/components/Logo.jsx) (남색·파랑 사슬 고리 두 개가 엮인 모양, SVG). 검색 전에는 기능 소개 카드 3개, 검색 후에는 결과 목록이 보입니다.
-- 스타일은 [src/App.css](src/App.css) 한 파일 (CSS 프레임워크 없음). 색 변수(`--primary`, `--navy`, `--ink`)는 [src/index.css](src/index.css).
+- 검색 전에는 기능 소개 카드 3개, 검색 후에는 결과 목록이 보입니다.
+- 스타일은 [src/App.css](src/App.css) 한 파일 (CSS 프레임워크 없음). 색 변수는 [src/index.css](src/index.css)에 있습니다.
+- 디자인 톤: 어두운 바탕(`--bg` #172029) 위에 밝은 종이 카드(`--paper` #e6eaf0). 강조는 철청색(`--steel`)과 민트(`--mint`). 긴 글(요약, 비교)은 항상 종이 카드 위 어두운 글씨로 둡니다. 글꼴은 Pretendard(index.html에서 CDN으로 불러옴), 최소 13px, 본문 16px.
+- 로고([src/components/Logo.jsx](src/components/Logo.jsx))는 대각선으로 누운 사슬 고리 두 개가 서로 걸린 모양입니다(교차점은 mask로 틈을 냄). 색은 `--logo-a`(밝은 철청색)·`--logo-b`(민트).
 - Vite 프록시 `/api → http://localhost:8000`은 [vite.config.js](vite.config.js)에 이미 설정되어 있습니다.
 
 구조를 README 권장안 쪽으로 옮기는 리팩터링은 요청받았을 때만 합니다.
