@@ -52,23 +52,32 @@ export default function SearchPage({
         className={`search-hero page-width${query ? " is-compact" : ""}`}
         aria-labelledby="search-heading"
       >
+        {!query && (
+          <dl className="hero-meta">
+            <div>
+              <dt>데이터</dt>
+              <dd>22대 국회 발의법률안</dd>
+            </div>
+            <div>
+              <dt>할 수 있는 일</dt>
+              <dd>검색, AI 요약, 두 법안 비교</dd>
+            </div>
+            <div>
+              <dt>안내</dt>
+              <dd>법률 자문이 아닌 정보 제공</dd>
+            </div>
+          </dl>
+        )}
         <h1 id="search-heading" className="hero-title">
-          {query ? (
-            <button
-              type="button"
-              className="hero-home"
-              onClick={onGoHome}
-              aria-label="법안잇다 홈으로"
-            >
-              <LogoMark size={48} />
-              법안잇다
-            </button>
-          ) : (
-            <>
-              <LogoMark size={92} />
-              법안잇다
-            </>
-          )}
+          <button
+            type="button"
+            className="hero-home"
+            onClick={onGoHome}
+            aria-label="법안잇다 홈으로"
+          >
+            <LogoMark size={query ? 56 : 104} />
+            법안잇다
+          </button>
         </h1>
         <p className="hero-tagline">유사 법률안을 찾고, 연결하다</p>
         <form
@@ -179,7 +188,6 @@ export default function SearchPage({
           </div>
           <div className="results-heading">
             <div>
-              <span className="section-kicker">SEARCH RESULTS</span>
               <h2 id="results-heading">
                 ‘{query}’ 검색 결과 <span>{results.length}</span>
               </h2>

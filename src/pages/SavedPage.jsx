@@ -12,7 +12,6 @@ export default function SavedPage({
 
   return (
     <section className="saved-page page-width" aria-labelledby="saved-heading">
-      <span className="section-kicker">SAVED BILLS</span>
       <h1 id="saved-heading">
         저장한 법안 <span>{savedBills.length}</span>
       </h1>
