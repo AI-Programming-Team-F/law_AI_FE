@@ -1,35 +1,48 @@
 :root {
-  /* 어두운 바탕 */
-  --bg: #172029;
-  --bg-raise: #1d2833;
-  --bg-hover: #26333f;
-  --line-dark: #2f3d4a;
-  --on-dark: #e6ebf0;
-  --on-dark-muted: #a3b2c0;
+  color-scheme: light;
 
-  /* 밝은 종이(카드) */
-  --paper: #e6eaf0;
-  --paper-hi: #f5f7fa;
-  --ink: #16202a;
-  --ink-muted: #475564;
-  --line-paper: #c3ccd6;
-  --control-line: #6f7d8b;
+  /* 바탕과 면 */
+  --page: #ffffff;
+  --panel: #f5f6f9;
+  --sheet: #ffffff;
+  --line: #dde1e8;
+  --line-strong: #c5ccd8;
+  --control-line: #7f8a9a;
 
-  /* 강조색 */
-  --steel: #3e5a72;
-  --steel-deep: #2f475c;
-  --mint: #cfe6df;
-  --mint-hover: #bcdcd2;
+  /* 글자 */
+  --ink: #131b2c;
+  --ink-muted: #566072;
 
-  /* 로고 사슬: 철청색(밝게) + 민트 */
-  --logo-a: #7896b0;
-  --logo-b: var(--mint);
+  /* 브랜드: 로고의 남색과 파랑 */
+  --navy: #1f3a8a;
+  --navy-deep: #172c6b;
+  --blue: #4a78f0;
+  --blue-text: #2a56c6;
+  --tint: #eef2fb;
+  --tint-line: #cdd9f5;
 
-  font-family:
+  /* 하단 비교 바구니(유일하게 어두운 면) */
+  --dock: #17275c;
+  --on-dock: #ffffff;
+  --on-dock-muted: #c9d2ea;
+  --on-dock-accent: #a9c0fa;
+
+  /* 검색어 형광펜 */
+  --highlight: #ffe58a;
+
+  /* 로고 사슬: 남색 + 파랑 */
+  --logo-a: var(--navy);
+  --logo-b: var(--blue);
+
+  /* 제목은 부리 글꼴, 본문과 버튼은 Pretendard */
+  --font-body:
     "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  color: var(--on-dark);
-  background: var(--bg);
+  --font-display: "Hahmlet", var(--font-body);
+
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -44,7 +57,10 @@
 body {
   margin: 0;
   min-width: 360px;
-  background: var(--bg);
+  background: var(--page);
+  /* 한글은 낱말 단위로 줄을 바꾸고, 아주 긴 낱말만 중간에서 끊습니다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 button,
 input {
@@ -55,7 +71,7 @@ button,
 a,
 input {
   -webkit-tap-highlight-color: transparent;
-  outline-offset: 3px;
+  outline-offset: 2px;
   touch-action: manipulation;
 }
 button {
@@ -70,7 +86,7 @@ a {
   text-decoration: none;
 }
 :focus-visible {
-  outline: 3px solid var(--mint);
+  outline: 3px solid var(--blue);
 }
 h1,
 h2,
@@ -83,24 +99,20 @@ dd {
 h1,
 h2,
 h3 {
-  word-break: keep-all;
   text-wrap: balance;
-}
-p {
-  word-break: keep-all;
 }
 svg {
   display: block;
   flex-shrink: 0;
 }
+/* 검색어와 맞은 단어: 글자 아래쪽 절반만 칠하는 형광펜 */
 mark {
-  background: var(--mint);
-  color: var(--ink);
-  border-radius: 2px;
-  padding: 0 2px;
+  background: linear-gradient(transparent 55%, var(--highlight) 55%);
+  color: inherit;
+  padding: 0 1px;
 }
 ::selection {
-  background: var(--mint);
+  background: #cfdcfb;
   color: var(--ink);
 }
 @media (prefers-reduced-motion: reduce) {

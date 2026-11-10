@@ -22,7 +22,6 @@ export default function ComparePage() {
         <p>검색 화면에서 서로 다른 법안 2개를 선택해 주세요.</p>
         <Link className="button button-primary" to="/">
           법률안 찾으러 가기
-          <Icon name="arrow" size={17} />
         </Link>
       </section>
     );
@@ -65,7 +64,11 @@ export default function ComparePage() {
             </div>
             <h2>{bill.bill_name}</h2>
             <p className="bill-meta">
-              {bill.committee} · 의안번호 {bill.bill_no}
+              <span>{bill.committee}</span>
+              <span className="meta-divider" aria-hidden="true">
+                ·
+              </span>
+              <span>의안번호 {bill.bill_no}</span>
             </p>
             <p className="comparison-summary">
               {bill.summary ||

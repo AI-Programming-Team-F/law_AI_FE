@@ -26,8 +26,11 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 - 레이아웃: 왼쪽 사이드바(로고 + `유사법안 검색`·`저장한 법안` 메뉴) + 오른쪽 본문. 760px 이하에서는 사이드바가 상단 가로 바로 바뀝니다. 비교 화면은 검색 결과에서 들어가므로 메뉴에 따로 두지 않습니다.
 - 검색 전에는 기능 소개 카드 3개, 검색 후에는 결과 목록이 보입니다.
 - 스타일은 [src/App.css](src/App.css) 한 파일 (CSS 프레임워크 없음). 색 변수는 [src/index.css](src/index.css)에 있습니다.
-- 디자인 톤: 어두운 바탕(`--bg` #172029) 위에 밝은 종이 카드(`--paper` #e6eaf0). 강조는 철청색(`--steel`)과 민트(`--mint`). 긴 글(요약, 비교)은 항상 종이 카드 위 어두운 글씨로 둡니다. 글꼴은 Pretendard(index.html에서 CDN으로 불러옴), 최소 13px, 본문 16px.
-- 로고([src/components/Logo.jsx](src/components/Logo.jsx))는 대각선으로 누운 사슬 고리 두 개가 서로 걸린 모양입니다(교차점은 mask로 틈을 냄). 색은 `--logo-a`(밝은 철청색)·`--logo-b`(민트).
+- 디자인 톤: 밝은 테마. 흰 바탕(`--page`)에 가는 선(`--line`)으로 면을 나누고, 그림자는 하단 비교 바구니에만 씁니다. 색은 로고의 남색(`--navy` #1f3a8a) 하나를 중심으로 쓰고 파랑(`--blue`)은 포커스·링크에만 씁니다. 어두운 면은 비교 바구니(`--dock`)뿐입니다. 장식용 그라데이션·원·아이콘 배경 원은 쓰지 않습니다.
+- 글꼴: 제목은 부리 글꼴 Hahmlet(`--font-display`), 본문·버튼은 Pretendard(`--font-body`). 둘 다 index.html에서 CDN으로 불러옵니다. 최소 13px, 본문 16px.
+- 검색어와 맞은 단어(`<mark>`)는 글자 아래쪽 절반만 칠하는 노란 형광펜(`--highlight`)입니다.
+- 760px 이하는 모바일, 1040px 이하는 기능 소개 세 칸과 비교 바구니가 세로로 쌓입니다.
+- 로고([src/components/Logo.jsx](src/components/Logo.jsx))는 대각선으로 누운 사슬 고리 두 개가 서로 걸린 모양입니다(교차점은 mask로 틈을 냄). 색은 `--logo-a`(남색)·`--logo-b`(파랑).
 - Vite 프록시 `/api → http://localhost:8000`은 [vite.config.js](vite.config.js)에 이미 설정되어 있습니다.
 
 구조를 README 권장안 쪽으로 옮기는 리팩터링은 요청받았을 때만 합니다.
