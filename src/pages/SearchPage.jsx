@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MOCK_SEARCH_RESULTS } from "../api/mock";
+import { MOCK_SEARCH_RESULTS, MOCK_SUMMARIES } from "../api/mock";
 import BillCard from "../components/BillCard";
 import Icon from "../components/Icon";
 import { LogoMark } from "../components/Logo";
@@ -24,9 +24,10 @@ export default function SearchPage({
   const [inputError, setInputError] = useState("");
 
   // UI 확인용 검색입니다. 서버 연결 시 검색 API 요청으로 교체합니다.
+  // 서버가 법안 원문까지 검색하는 것을 흉내 내려고 예시 요약 글도 함께 찾습니다(화면에는 표시하지 않음).
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   const results = MOCK_SEARCH_RESULTS.results.filter((bill) => {
-    const text = [bill.bill_name, bill.summary, ...bill.matched_keywords]
+    const text = [bill.bill_name, MOCK_SUMMARIES[bill.bill_no], ...bill.matched_keywords]
       .join(" ")
       .toLowerCase();
     return terms.some((term) => text.includes(term));

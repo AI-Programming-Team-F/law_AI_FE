@@ -14,8 +14,9 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 
 ## 현재 코드 상태 (README 권장 구조와 다른 점)
 
-- 서버 미연결. 모든 데이터는 [src/api/mock.js](src/api/mock.js)에서 옵니다 (`MOCK_SEARCH_RESULTS`, `MOCK_COMPARE_RESULT`).
-- `client.js`, `bills.js`는 아직 없습니다. 서버 연결 시 README 9장 구조대로 `src/api/`에 추가합니다.
+- 서버 미연결. 모든 데이터는 [src/api/mock.js](src/api/mock.js)에서 옵니다 (`MOCK_SEARCH_RESULTS`, `MOCK_SUMMARIES`, `MOCK_COMPARE_RESULT`).
+- [src/api/bills.js](src/api/bills.js)에는 법안 요약 요청(`getBillSummary`)만 있습니다. 지금은 mock을 0.8초 뒤 돌려주고, 서버 연결 시 `requestSummary`만 실제 호출로 바꿉니다. `client.js`와 검색·비교 호출은 서버 연결 시 README 9장 구조대로 추가합니다.
+- AI 요약은 토큰 절약을 위해 **미리 만들지 않습니다.** 검색 결과에는 `summary`가 없고, 카드의 `AI 요약 확인하기`를 누른 법안만 요청합니다(README 2-2, 8-2). 받은 요약은 `bills.js`에 저장해 다시 요청하지 않습니다. 비교 화면의 두 법안 요약은 비교 API가 함께 줍니다.
 - 검색어·비교 바구니·저장 목록은 [src/App.jsx](src/App.jsx)의 `useState`로 들고 props로 넘깁니다 (Context 아님).
   - 비교 바구니(`selectedBills`)는 의안번호가 아니라 **법안 객체**를 담습니다. 다시 검색해도 비우지 않습니다 (다른 키워드 법안끼리 비교 가능).
   - 저장 목록(`savedBills`)은 localStorage(`beopan-itda:saved-bills`)에 보관합니다. 서버 API 없음.
@@ -57,6 +58,7 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 
 ### 빈 값 처리
 - `summary: null` → "요약을 준비하지 못했어요. 원문 링크를 확인하세요"
+- 요약 요청 실패 → "요약을 불러오지 못했어요" + `다시 시도` 버튼
 - `ai_summary: null` → AI 비교 요약 영역 숨김, 문장 비교만 표시
 - `results: []` → "검색 결과가 없어요. 다른 키워드로 검색해 보세요"
 

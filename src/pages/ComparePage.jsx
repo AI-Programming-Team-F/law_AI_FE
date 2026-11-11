@@ -1,5 +1,9 @@
 import { Link, useSearchParams } from "react-router-dom";
-import { MOCK_COMPARE_RESULT, MOCK_SEARCH_RESULTS } from "../api/mock";
+import {
+  MOCK_COMPARE_RESULT,
+  MOCK_SEARCH_RESULTS,
+  MOCK_SUMMARIES,
+} from "../api/mock";
 import { StatusBadge } from "../components/BillCard";
 import Icon from "../components/Icon";
 
@@ -71,7 +75,8 @@ export default function ComparePage() {
               <span>의안번호 {bill.bill_no}</span>
             </p>
             <p className="comparison-summary">
-              {bill.summary ||
+              {/* 비교 API는 두 법안의 요약을 함께 내려줍니다(README 8-3). 지금은 예시 요약을 씁니다. */}
+              {MOCK_SUMMARIES[bill.bill_no] ||
                 "요약을 준비하지 못했어요. 원문 링크를 확인하세요."}
             </p>
             <small className="ai-notice">

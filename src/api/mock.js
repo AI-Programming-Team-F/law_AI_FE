@@ -11,8 +11,7 @@ export const MOCK_SEARCH_RESULTS = {
       status: "REVIEW", // 심사 중
       link: "https://likms.assembly.go.kr/bill/main.do",
       score: 0.95,
-      matched_keywords: ["월세", "임차인"],
-      summary: "청년 및 무주택 임차인의 주거비 부담 경감을 위한 월세 세액공제율 상향 법안입니다."
+      matched_keywords: ["월세", "임차인"]
     },
     {
       bill_no: "2200002",
@@ -22,8 +21,7 @@ export const MOCK_SEARCH_RESULTS = {
       status: "MERGED", // 대안 반영 폐기
       link: "https://likms.assembly.go.kr/bill/main.do",
       score: 0.81,
-      matched_keywords: ["월세", "세액공제"],
-      summary: null // 요약이 없는 예외 케이스 테스트용 (README 8-4 참고)
+      matched_keywords: ["월세", "세액공제"]
     },
     {
       bill_no: "2200003",
@@ -33,10 +31,17 @@ export const MOCK_SEARCH_RESULTS = {
       status: "PASSED", // 본회의 통과
       link: "https://likms.assembly.go.kr/bill/main.do",
       score: 0.74,
-      matched_keywords: ["청년", "지원금"],
-      summary: "청년 취약계층 대상 주거 바우처 지급 및 보증금 지원 근거를 마련하는 법안입니다."
+      matched_keywords: ["청년", "지원금"]
     }
   ]
+};
+
+// 법안별 AI 요약 목 데이터 (GET /api/bills/{bill_no}/summary, README 8-2)
+// 검색 결과에는 요약이 없고, 'AI 요약 확인하기'를 눌렀을 때만 이 값을 가져옵니다.
+export const MOCK_SUMMARIES = {
+  "2200001": "청년 및 무주택 임차인의 주거비 부담 경감을 위한 월세 세액공제율 상향 법안입니다.",
+  "2200002": null, // 요약이 없는 예외 케이스 테스트용 (README 8-5 참고)
+  "2200003": "청년 취약계층 대상 주거 바우처 지급 및 보증금 지원 근거를 마련하는 법안입니다."
 };
 
 // 비교 화면 목 데이터 (/compare)

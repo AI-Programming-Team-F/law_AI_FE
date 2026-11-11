@@ -29,7 +29,7 @@ git diff
 - [ ] 컴포넌트에서 `fetch`를 직접 호출하지 않음 (`src/api/`에서만)
 - [ ] 검색 결과를 프론트에서 재정렬·필터링하지 않음 (서버 score 순서 유지)
 - [ ] `MERGED`가 `PASSED`와 같은 색·문구로 표시되지 않음
-- [ ] `summary: null`, `ai_summary: null`, `results: []` 처리 문구가 README 8-4와 일치
+- [ ] `summary: null`, `ai_summary: null`, `results: []` 처리 문구가 README 8-5와 일치
 - [ ] 고지 문구 유지: "AI가 생성한 요약이며 원문과 다를 수 있습니다." / "법률 자문이 아닌 정보 안내입니다. 정확한 내용은 원문을 확인하세요."
 - [ ] 모든 법률안 카드에 원문 링크(새 탭, `rel="noopener noreferrer"`)
 - [ ] 버튼·입력이 키보드로 조작 가능 (div onClick 대신 button 등)
