@@ -10,6 +10,18 @@ function invalidResponse() {
   return new ApiError("서버 응답 형식이 명세와 달라요. 잠시 후 다시 시도해 주세요.", { code: "INVALID_RESPONSE" });
 }
 
+// 처리 단계순 정렬 순서: 심사 중 → 본회의 통과 → 대안에 반영(폐기) → 기타 → 처리 결과 미제공
+export const STATUS_ORDER = ["REVIEW", "PASSED", "MERGED", "OTHER", "UNKNOWN"];
+
+// 처리 상태 표기. 카드 뱃지와 처리 단계 박스가 같은 문구를 씁니다. MERGED는 통과가 아닙니다.
+export const STATUS_LABELS = {
+  REVIEW: "심사 중",
+  PASSED: "본회의 통과",
+  MERGED: "대안에 반영(폐기)",
+  OTHER: "기타",
+  UNKNOWN: "처리 결과 미제공",
+};
+
 // null은 기존 연동 논의 기준으로 심사 중으로 분류합니다.
 export function normalizeStatus(result) {
   const value = result?.replace(/\s/g, "") || "";
@@ -22,7 +34,10 @@ export function getCachedBill(billNo) {
   return bills.get(billNo);
 }
 
-export async function searchBills(query, { signal, limit = 20 } = {}) {
+// BE가 허용하는 최대값(1~100). 한 번에 받아 화면에서 20건씩 나눠 보여줍니다.
+export const SEARCH_LIMIT = 100;
+
+export async function searchBills(query, { signal, limit = SEARCH_LIMIT } = {}) {
   const response = await request("/search", { query, limit }, { signal, timeoutMs: 30000 });
   if (typeof response.preprocess !== "boolean" || !Array.isArray(response.data)) throw invalidResponse();
   if (!response.preprocess) return { ready: false, results: [] };

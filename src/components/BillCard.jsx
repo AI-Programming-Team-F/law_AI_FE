@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { getBillSummary, getCachedSummary } from "../api/bills";
+import { getBillSummary, getCachedSummary, STATUS_LABELS } from "../api/bills";
 import Icon from "./Icon";
 
 const STATUS = {
-  PASSED: { label: "본회의 통과", className: "passed" },
-  MERGED: { label: "대안에 반영(폐기)", className: "merged" },
-  REVIEW: { label: "심사 중", className: "review" },
-  UNKNOWN: { label: "처리 결과 미제공", className: "other" },
-  OTHER: { label: "기타", className: "other" },
+  PASSED: { label: STATUS_LABELS.PASSED, className: "passed" },
+  MERGED: { label: STATUS_LABELS.MERGED, className: "merged" },
+  REVIEW: { label: STATUS_LABELS.REVIEW, className: "review" },
+  UNKNOWN: { label: STATUS_LABELS.UNKNOWN, className: "other" },
+  OTHER: { label: STATUS_LABELS.OTHER, className: "other" },
 };
 
 export function StatusBadge({ status }) {
@@ -20,12 +20,23 @@ export function StatusBadge({ status }) {
   );
 }
 
+function keywordPattern(words) {
+  return words
+    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+}
+
+// 글 안에서 검색어가 나온 횟수 (접힌 원문 제목 옆에 표시)
+function countMatches(text, keywords) {
+  const words = keywords.filter(Boolean);
+  if (!words.length || !text) return 0;
+  return (text.match(new RegExp(keywordPattern(words), "gi")) || []).length;
+}
+
 function Highlight({ text, keywords }) {
   const words = keywords.filter(Boolean);
   if (!words.length) return text;
-  const pattern = words
-    .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|");
+  const pattern = keywordPattern(words);
   return text
     .split(new RegExp(`(${pattern})`, "gi"))
     .map((part, index) =>
@@ -68,9 +79,9 @@ export function BillSummary({ bill }) {
 
   return (
     <div className="summary-box">
-      <span className="summary-label">AI 요약</span>
       {state.status === "done" ? (
         <>
+          <span className="summary-label">AI 요약</span>
           <p
             ref={textRef}
             tabIndex={-1}
@@ -129,7 +140,11 @@ export default function BillCard({
   onToggle,
   saved,
   onToggleSave,
+  highlightTerms = [],
 }) {
+  // 검색어를 띄어쓰기로 나눈 단어. 원문에서 같은 부분에 형광펜을 칠하는 데만 씁니다.
+  const terms = highlightTerms.filter(Boolean);
+  const matchCount = countMatches(bill.proposal_text, terms);
   return (
     <article
       className={`bill-card${selected ? " is-selected" : ""}`}
@@ -169,8 +184,13 @@ export default function BillCard({
       {!bill.link && <p className="bill-meta">원문 링크가 제공되지 않았어요.</p>}
       {bill.proposal_text && (
         <details className="bill-original">
-          <summary>제안이유 및 주요내용</summary>
-          <p>{bill.proposal_text}</p>
+          <summary>
+            제안이유 및 주요내용
+            {matchCount > 0 && <span className="match-count">검색어 {matchCount}곳</span>}
+          </summary>
+          <p>
+            <Highlight text={bill.proposal_text} keywords={terms} />
+          </p>
         </details>
       )}
       <BillSummary bill={bill} />
