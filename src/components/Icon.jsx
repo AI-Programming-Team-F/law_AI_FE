@@ -1,4 +1,5 @@
 const paths = {
+  home: <path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z" />,
   search: (
     <>
       <circle cx="10.8" cy="10.8" r="6.8" />

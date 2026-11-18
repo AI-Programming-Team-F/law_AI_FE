@@ -44,7 +44,8 @@ export async function searchBills(query, { signal, limit = SEARCH_LIMIT } = {}) 
   const results = response.data.map((raw) => {
     if (typeof raw?.BILL_NO !== "string" || typeof raw.BILL_NAME !== "string" ||
         !(raw.PROC_RESULT === null || typeof raw.PROC_RESULT === "string") ||
-        typeof raw.SUMMARY !== "string" || !Number.isInteger(raw.SCORE)) throw invalidResponse();
+        typeof raw.SUMMARY !== "string" || !Number.isInteger(raw.SCORE) ||
+        (raw.COMMITTEE != null && typeof raw.COMMITTEE !== "string")) throw invalidResponse();
     return {
       bill_no: raw.BILL_NO,
       bill_name: raw.BILL_NAME,
@@ -52,8 +53,9 @@ export async function searchBills(query, { signal, limit = SEARCH_LIMIT } = {}) 
       process_result: raw.PROC_RESULT,
       proposal_text: raw.SUMMARY || "",
       score: raw.SCORE,
-      // 현재 BE 명세에는 이 네 가지 필드가 없습니다.
-      committee: null,
+      // 소관위는 선택 확장 필드입니다. 기존 응답에는 없어도 검색을 유지합니다.
+      committee: raw.COMMITTEE?.trim() || null,
+      // 현재 BE 명세에는 아래 세 가지 필드가 없습니다.
       propose_date: null,
       link: null,
       matched_keywords: [],

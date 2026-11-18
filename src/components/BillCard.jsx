@@ -141,10 +141,14 @@ export default function BillCard({
   saved,
   onToggleSave,
   highlightTerms = [],
+  showSimilarity = false,
 }) {
-  // 검색어를 띄어쓰기로 나눈 단어. 원문에서 같은 부분에 형광펜을 칠하는 데만 씁니다.
+  // 검색어를 띄어쓰기로 나눈 단어로 제목과 원문의 일치 부분을 표시합니다.
   const terms = highlightTerms.filter(Boolean);
   const matchCount = countMatches(bill.proposal_text, terms);
+  const highlightedTitle = (
+    <Highlight text={bill.bill_name} keywords={terms.length ? terms : bill.matched_keywords || []} />
+  );
   return (
     <article
       className={`bill-card${selected ? " is-selected" : ""}`}
@@ -169,10 +173,10 @@ export default function BillCard({
       <h3 id={`bill-${bill.bill_no}`}>
         {bill.link ? (
           <a href={bill.link} target="_blank" rel="noopener noreferrer" aria-label={`${bill.bill_name} 원문 새 탭에서 보기`}>
-            <Highlight text={bill.bill_name} keywords={bill.matched_keywords || []} />
+            {highlightedTitle}
             <Icon name="external" size={17} />
           </a>
-        ) : bill.bill_name}
+        ) : highlightedTitle}
       </h3>
       {(bill.committee || bill.propose_date) && (
         <p className="bill-meta">
@@ -192,6 +196,11 @@ export default function BillCard({
             <Highlight text={bill.proposal_text} keywords={terms} />
           </p>
         </details>
+      )}
+      {showSimilarity && Number.isFinite(bill.score) && (
+        <p className="bill-similarity" title="서버에서 제공한 검색 유사도 점수입니다.">
+          유사도 <strong>{bill.score.toLocaleString("ko-KR")}점</strong>
+        </p>
       )}
       <BillSummary bill={bill} />
       <div className="card-bottom">

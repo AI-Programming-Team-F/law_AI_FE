@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { searchBills, STATUS_LABELS, STATUS_ORDER } from "../api/bills";
 import RequestState from "../components/RequestState";
 import BillCard from "../components/BillCard";
 import Icon from "../components/Icon";
 import { LogoMark } from "../components/Logo";
+import { filterByCommittee, getCommitteeOptions, UNKNOWN_COMMITTEE } from "../filters/committees";
 
 const EXAMPLE_QUERIES = [
   "월세 지원금",
@@ -16,11 +18,13 @@ export default function SearchPage({
   query,
   setQuery,
   onGoHome,
+  compareUrl,
   selectedBills,
   onToggleCompare,
   savedBills,
   onToggleSave,
 }) {
+  const navigate = useNavigate();
   const [input, setInput] = useState(query);
   const [inputError, setInputError] = useState("");
 
@@ -37,6 +41,7 @@ export default function SearchPage({
     setQuery(nextQuery);
     setSearchVersion((version) => version + 1);
     setInputError("");
+    navigate("/search");
   }
 
   return (
@@ -45,22 +50,6 @@ export default function SearchPage({
         className={`search-hero page-width${query ? " is-compact" : ""}`}
         aria-labelledby="search-heading"
       >
-        {!query && (
-          <dl className="hero-meta">
-            <div>
-              <dt>데이터</dt>
-              <dd>22대 국회 발의법률안</dd>
-            </div>
-            <div>
-              <dt>할 수 있는 일</dt>
-              <dd>검색, AI 요약, 두 법안 비교</dd>
-            </div>
-            <div>
-              <dt>안내</dt>
-              <dd>법률 자문이 아닌 정보 제공</dd>
-            </div>
-          </dl>
-        )}
         <h1 id="search-heading" className="hero-title">
           <button
             type="button"
@@ -72,7 +61,7 @@ export default function SearchPage({
             법안잇다
           </button>
         </h1>
-        <p className="hero-tagline">유사 법률안을 찾고, 연결하다</p>
+        <p className="hero-tagline">흩어진 법안의 조각, 한눈에 잇다</p>
         <form
           className="search-form"
           onSubmit={(event) => {
@@ -123,29 +112,26 @@ export default function SearchPage({
 
       {!query && (
         <section className="feature-grid page-width" aria-label="서비스 소개">
-          <article className="feature-card">
+          <Link className="feature-card feature-link" to="/saved">
             <span className="feature-icon">
-              <Icon name="documents" size={56} />
+              <Icon name="bookmark" size={56} />
             </span>
-            <h2>유사 법안 추천</h2>
-            <p>
-              키워드와 관련 있는 법률안을
-              <br />
-              관련도 순으로 찾아드립니다.
-            </p>
-            <span className="feature-pill">AI 요약으로 빠르게 파악</span>
-          </article>
-          <article className="feature-card">
+            <h2>저장한 법안</h2>
+            <p>관심 있는 법안을 저장하고<br />한곳에서 다시 살펴보세요.</p>
+            <span className="feature-pill">저장한 법안 {savedBills.length}건 보기 →</span>
+          </Link>
+          <Link className="feature-card feature-link" to={compareUrl}>
             <span className="feature-icon">
               <Icon name="scale" size={56} />
             </span>
-            <h2>핵심 비교</h2>
+            <h2>비교하기</h2>
             <ul>
               <li>두 법안의 핵심 내용</li>
               <li>주제별 차이점 비교</li>
               <li>필요한 법안만 AI 요약</li>
             </ul>
-          </article>
+            <span className="feature-pill">두 법안 비교하러 가기 →</span>
+          </Link>
           <article className="feature-card">
             <span className="feature-icon">
               <Icon name="tag" size={56} />
@@ -165,6 +151,13 @@ export default function SearchPage({
             </div>
           </article>
         </section>
+      )}
+
+      {!query && (
+        <dl className="hero-meta page-width">
+          <div><dt>데이터</dt><dd>22대 국회 발의법률안</dd></div>
+          <div><dt>안내</dt><dd>법률 자문이 아닌 정보 제공</dd></div>
+        </dl>
       )}
 
       {query && (
@@ -280,6 +273,7 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState("score");
   const [stages, setStages] = useState([]);
+  const [committee, setCommittee] = useState("");
   const headingRef = useRef(null);
   const selectedIds = selectedBills.map((bill) => bill.bill_no);
   const savedIds = savedBills.map((bill) => bill.bill_no);
@@ -307,9 +301,12 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
   const highlightTerms = query.split(/\s+/).filter(Boolean);
   const sorted = sortResults(results, sort);
   // 사용자가 단계 박스를 고른 경우에만 그 단계의 법안만 남깁니다(순서는 그대로).
-  const filtered = sort === "status" && stages.length
+  const stageFiltered = sort === "status" && stages.length
     ? sorted.filter((bill) => stages.includes(bill.status))
     : sorted;
+  const filtered = filterByCommittee(stageFiltered, committee);
+  const committeeOptions = getCommitteeOptions(results);
+  const unknownCommitteeCount = committeeOptions.find((option) => option.value === UNKNOWN_COMMITTEE).count;
   const stageCounts = results.reduce((counts, bill) => {
     counts[bill.status] = (counts[bill.status] || 0) + 1;
     return counts;
@@ -327,6 +324,12 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
     );
     setPage(1);
   }
+
+  function clearFilters() {
+    setCommittee("");
+    setStages([]);
+    setPage(1);
+  }
   return (
     <section className="results-section page-width" aria-labelledby="results-heading">
       <div className="results-heading">
@@ -338,23 +341,6 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
             </span>
           )}
         </h2>
-        {state.status === "done" && results.length > 1 && (
-          <label className="sort-label">
-            <Icon name="sort" size={16} />
-            <span className="sr-only">정렬</span>
-            <select
-              value={sort}
-              onChange={(event) => {
-                setSort(event.target.value);
-                setStages([]);
-                setPage(1);
-              }}
-            >
-              <option value="score">관련도순</option>
-              <option value="status">처리 단계순</option>
-            </select>
-          </label>
-        )}
       </div>
       {state.status === "loading" ? (
         <RequestState loading title="법률안을 찾고 있어요" message="검색 결과를 불러오는 중입니다." />
@@ -366,9 +352,62 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
         <RequestState title="검색 결과가 없어요" message="다른 키워드로 검색해 보세요." />
       ) : (
         <>
-          <p className="selection-help" id="selection-help">
-            궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요. 다른 키워드로 검색해서 담아도 돼요.
-          </p>
+          <div className="results-toolbar">
+            <p className="selection-help" id="selection-help">
+              궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요. 다른 키워드로 검색해서 담아도 돼요.
+            </p>
+            <div className="results-controls">
+              <label className="sort-label committee-label">
+                <span>소관위원회</span>
+                <select
+                  aria-label="소관위원회 필터"
+                  value={committee}
+                  title={committeeOptions.find((option) => option.value === committee)?.label || "소관위원회 전체"}
+                  onChange={(event) => {
+                    setCommittee(event.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <option value="">소관위원회 전체 ({results.length}건)</option>
+                  {committeeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count}건)
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {results.length > 1 && (
+                <label className="sort-label">
+                  <Icon name="sort" size={16} />
+                  <span className="sr-only">정렬</span>
+                  <select
+                    aria-label="검색 결과 정렬"
+                    value={sort}
+                    onChange={(event) => {
+                      setSort(event.target.value);
+                      setStages([]);
+                      setPage(1);
+                    }}
+                  >
+                    <option value="score">관련도순</option>
+                    <option value="status">처리 단계순</option>
+                  </select>
+                </label>
+              )}
+              {(committee || stages.length > 0) && (
+                <button type="button" className="stage-clear" onClick={clearFilters}>
+                  필터 초기화
+                </button>
+              )}
+            </div>
+          </div>
+          {unknownCommitteeCount > 0 && (
+            <p className="committee-notice">
+              {unknownCommitteeCount === results.length
+                ? "현재 검색 결과에는 소관위원회 정보가 없어요."
+                : `소관위원회 정보가 없는 법안 ${unknownCommitteeCount}건은 ‘소관위원회 정보 없음’에서 볼 수 있어요.`}
+            </p>
+          )}
           {sort === "status" && (
             <StageFilter
               counts={stageCounts}
@@ -389,16 +428,18 @@ function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onTo
               {start + 1}–{start + pageResults.length}번째 결과
             </p>
           )}
-          <div className="bill-list">
+          {filtered.length === 0 ? (
+            <RequestState title="선택한 조건에 맞는 법안이 없어요" message="다른 소관위원회나 처리 단계를 선택하거나 필터를 초기화해 주세요." />
+          ) : <div className="bill-list">
             {pageResults.map((bill) => (
               <BillCard key={bill.bill_no} bill={bill}
                 selected={selectedIds.includes(bill.bill_no)}
                 disabled={selectedIds.length === 2 && !selectedIds.includes(bill.bill_no)}
                 onToggle={() => onToggleCompare(bill)}
                 saved={savedIds.includes(bill.bill_no)} onToggleSave={() => onToggleSave(bill)}
-                highlightTerms={highlightTerms} />
+                highlightTerms={highlightTerms} showSimilarity />
             ))}
-          </div>
+          </div>}
           <Pagination page={page} pageCount={pageCount} onChange={changePage} />
         </>
       )}

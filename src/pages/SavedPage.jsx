@@ -42,7 +42,7 @@ export default function SavedPage({
           </span>
           <h2>아직 저장한 법안이 없어요</h2>
           <p>검색 결과 카드의 저장 버튼을 눌러 법안을 모아 보세요.</p>
-          <Link className="button button-soft" to="/">
+          <Link className="button button-soft" to="/search">
             법안 검색하러 가기
           </Link>
         </div>

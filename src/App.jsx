@@ -6,6 +6,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import SearchPage from "./pages/SearchPage";
 import ComparePage from "./pages/ComparePage";
@@ -29,6 +30,7 @@ function loadSavedBills() {
 
 function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   // 페이지를 이동하거나 다시 검색해도 검색어, 비교 바구니, 저장 목록을 유지합니다.
   const [query, setQuery] = useState("");
   const [homeKey, setHomeKey] = useState(0);
@@ -47,6 +49,7 @@ function AppLayout() {
   function goHome() {
     setQuery("");
     setHomeKey((key) => key + 1);
+    navigate("/");
     window.scrollTo(0, 0);
   }
 
@@ -67,6 +70,23 @@ function AppLayout() {
     );
   }
 
+  const compareUrl = selectedBills.length === 2
+    ? `/compare?${new URLSearchParams({ a: selectedBills[0].bill_no, b: selectedBills[1].bill_no })}`
+    : "/compare";
+  const searchPage = (
+    <SearchPage
+      key={`${location.pathname}:${homeKey}`}
+      query={location.pathname === "/" ? "" : query}
+      setQuery={setQuery}
+      onGoHome={goHome}
+      compareUrl={compareUrl}
+      selectedBills={selectedBills}
+      onToggleCompare={toggleCompare}
+      savedBills={savedBills}
+      onToggleSave={toggleSave}
+    />
+  );
+
   const showTray = location.pathname !== "/compare" && selectedBills.length > 0;
 
   return (
@@ -81,7 +101,11 @@ function AppLayout() {
           <Logo />
         </Link>
         <nav className="side-nav" aria-label="주 메뉴">
-          <NavLink to="/" end>
+          <NavLink to="/" end onClick={goHome}>
+            <Icon name="home" size={20} />
+            홈
+          </NavLink>
+          <NavLink to="/search">
             <Icon name="search" size={20} />
             유사법안 검색
           </NavLink>
@@ -94,6 +118,10 @@ function AppLayout() {
               </span>
             )}
           </NavLink>
+          <NavLink to={compareUrl}>
+            <Icon name="scale" size={20} />
+            비교하기
+          </NavLink>
         </nav>
         <span className="assembly-label">
           <span aria-hidden="true" />
@@ -103,21 +131,8 @@ function AppLayout() {
       <div className={`app-main${showTray ? " has-selection" : ""}`}>
         <main id="main-content">
           <Routes>
-            <Route
-              path="/"
-              element={
-                <SearchPage
-                  key={homeKey}
-                  query={query}
-                  setQuery={setQuery}
-                  onGoHome={goHome}
-                  selectedBills={selectedBills}
-                  onToggleCompare={toggleCompare}
-                  savedBills={savedBills}
-                  onToggleSave={toggleSave}
-                />
-              }
-            />
+            <Route path="/" element={searchPage} />
+            <Route path="/search" element={searchPage} />
             <Route
               path="/saved"
               element={
@@ -135,7 +150,7 @@ function AppLayout() {
               element={
                 <section className="empty-state page-width">
                   <h1>페이지를 찾을 수 없어요</h1>
-                  <Link className="button button-primary" to="/">
+                  <Link className="button button-primary" to="/search">
                     검색 화면으로
                   </Link>
                 </section>
@@ -145,7 +160,7 @@ function AppLayout() {
         </main>
         <footer className="site-footer page-width">
           <span className="footer-brand">
-            법안잇다 <span>유사 법률안을 찾고, 연결하다</span>
+            법안잇다 <span>흩어진 법안의 조각, 한눈에 잇다</span>
           </span>
           <p>
             법률 자문이 아닌 정보 안내입니다. 정확한 내용은 원문을 확인하세요.
