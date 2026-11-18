@@ -29,6 +29,7 @@
 
   /* 검색어 형광펜 */
   --highlight: #ffe58a;
+  --highlight-soft: #fff3b0; /* 원문 속 검색어: 연한 노란 형광펜 */
 
   /* 로고 사슬: 남색 + 파랑 */
   --logo-a: var(--navy);
