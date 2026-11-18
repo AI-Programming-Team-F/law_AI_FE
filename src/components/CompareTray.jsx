@@ -9,7 +9,7 @@ export default function CompareTray({ bills, onRemove }) {
     <aside className="compare-dock" aria-label="비교할 법률안">
       <div className="dock-info">
         <span className="dock-icon">
-          <Icon name="compare" size={21} />
+          <Icon name="scale" size={21} />
         </span>
         <div>
           <strong>
@@ -39,13 +39,15 @@ export default function CompareTray({ bills, onRemove }) {
       {bills.length === 2 ? (
         <Link
           className="button button-primary"
+          aria-label="선택한 두 법안 비교하기"
+          title="선택한 두 법안 비교하기"
           to={`/compare?${new URLSearchParams({ a: bills[0].bill_no, b: bills[1].bill_no })}`}
         >
-          비교하기
+          <Icon name="scale" size={23} />
         </Link>
       ) : (
-        <button className="button button-primary" disabled>
-          비교하기
+        <button className="button button-primary" aria-label="법안 2개를 선택하면 비교할 수 있어요" disabled>
+          <Icon name="scale" size={23} />
         </button>
       )}
     </aside>

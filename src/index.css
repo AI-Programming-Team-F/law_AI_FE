@@ -33,7 +33,7 @@
 
   /* 로고 사슬: 남색 + 파랑 */
   --logo-a: var(--navy);
-  --logo-b: var(--blue);
+  --logo-b: #97b2d9;
 
   /* 제목은 부리 글꼴, 본문과 버튼은 Pretendard */
   --font-body:

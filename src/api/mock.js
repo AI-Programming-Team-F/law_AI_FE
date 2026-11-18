@@ -2,8 +2,8 @@
 export const MOCK_SEARCH_RESULTS = {
   preprocess: true,
   data: [
-    { BILL_NO: "0000001", BILL_NAME: "예시 법률안 A", PROC_RESULT: null, SUMMARY: "제안이유 및 주요내용 예시 A", SCORE: 3 },
-    { BILL_NO: "0000002", BILL_NAME: "예시 법률안 B", PROC_RESULT: "대안반영폐기", SUMMARY: "제안이유 및 주요내용 예시 B", SCORE: 1 },
+    { BILL_NO: "0000001", BILL_NAME: "예시 법률안 A", COMMITTEE: "국토교통위원회", PROC_RESULT: null, SUMMARY: "제안이유 및 주요내용 예시 A", SCORE: 3 },
+    { BILL_NO: "0000002", BILL_NAME: "예시 법률안 B", COMMITTEE: "교육위원회", PROC_RESULT: "대안반영폐기", SUMMARY: "제안이유 및 주요내용 예시 B", SCORE: 1 },
   ],
 };
 export const MOCK_SUMMARIES = {

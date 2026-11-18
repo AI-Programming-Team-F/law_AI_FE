@@ -13,7 +13,7 @@ test("검색 계약: query 원문, 대문자 필드 변환, 서버 순서, 원�
     const parsed = new URL(url, "http://localhost");
     assert.equal(parsed.pathname, "/api/search");
     assert.equal(parsed.searchParams.get("query"), " 소방 & 안전 ");
-    assert.equal(parsed.searchParams.get("limit"), "20");
+    assert.equal(parsed.searchParams.get("limit"), "100");
     return json(MOCK_SEARCH_RESULTS);
   };
   const result = await searchBills(" 소방 & 안전 ");
@@ -23,6 +23,26 @@ test("검색 계약: query 원문, 대문자 필드 변환, 서버 순서, 원�
   assert.equal(result.results[0].proposal_text, MOCK_SEARCH_RESULTS.data[0].SUMMARY);
   assert.equal(result.results[0].summary, undefined);
   assert.equal(result.results[0].link, null);
+  assert.equal(result.results[0].committee, "국토교통위원회");
+  assert.equal(result.results[1].committee, "교육위원회");
+});
+
+test("선택 소관위 필드: 누락·null·공백 호환, 이름 보존, 잘못된 타입 거부", async () => {
+  const raw = MOCK_SEARCH_RESULTS.data[0];
+  const withoutCommittee = { ...raw };
+  delete withoutCommittee.COMMITTEE;
+  for (const [item, expected] of [
+    [withoutCommittee, null],
+    [{ ...raw, COMMITTEE: null }, null],
+    [{ ...raw, COMMITTEE: "  " }, null],
+    [{ ...raw, COMMITTEE: " 교육위원회 " }, "교육위원회"],
+    [{ ...raw, COMMITTEE: "기획재정위원회" }, "기획재정위원회"],
+  ]) {
+    globalThis.fetch = async () => json({ preprocess: true, data: [item] });
+    assert.equal((await searchBills("소관위")).results[0].committee, expected);
+  }
+  globalThis.fetch = async () => json({ preprocess: true, data: [{ ...raw, COMMITTEE: 17 }] });
+  await assert.rejects(searchBills("소관위"), { code: "INVALID_RESPONSE" });
 });
 
 test("준비 전, 검색 결과 없음, 잘못된 응답을 구분", async () => {

@@ -13,10 +13,10 @@ export default function ComparePage({ knownBills = [] }) {
   if (!a || !b || !/^\d+$/.test(a) || !/^\d+$/.test(b) || a === b) {
     return (
       <section className="empty-state compare-empty page-width">
-        <span className="empty-icon"><Icon name="compare" size={30} /></span>
+        <span className="empty-icon"><Icon name="scale" size={30} /></span>
         <h1>어떤 법안을 비교해 볼까요?</h1>
         <p>검색 화면에서 서로 다른 법안 2개를 선택해 주세요.</p>
-        <Link className="button button-primary" to="/">법률안 찾으러 가기</Link>
+        <Link className="button button-primary" to="/search">법률안 찾으러 가기</Link>
       </section>
     );
   }
@@ -25,7 +25,7 @@ export default function ComparePage({ knownBills = [] }) {
   });
   return (
     <section className="compare-page page-width">
-      <Link className="back-link" to="/">← 법률안 검색으로</Link>
+      <Link className="back-link" to="/search">← 법률안 검색으로</Link>
       <h1>두 법안, 어떤 점이 다를까요?</h1>
       <p className="compare-intro">주제별 차이점을 나란히 살펴보세요.</p>
       <div className="comparison-grid">
