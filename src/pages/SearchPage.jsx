@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { MOCK_SEARCH_RESULTS, MOCK_SUMMARIES } from "../api/mock";
+import { useEffect, useState } from "react";
+import { searchBills } from "../api/bills";
+import RequestState from "../components/RequestState";
 import BillCard from "../components/BillCard";
 import Icon from "../components/Icon";
 import { LogoMark } from "../components/Logo";
@@ -23,27 +24,18 @@ export default function SearchPage({
   const [input, setInput] = useState(query);
   const [inputError, setInputError] = useState("");
 
-  // UI 확인용 검색입니다. 서버 연결 시 검색 API 요청으로 교체합니다.
-  // 서버가 법안 원문까지 검색하는 것을 흉내 내려고 예시 요약 글도 함께 찾습니다(화면에는 표시하지 않음).
-  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-  const results = MOCK_SEARCH_RESULTS.results.filter((bill) => {
-    const text = [bill.bill_name, MOCK_SUMMARIES[bill.bill_no], ...bill.matched_keywords]
-      .join(" ")
-      .toLowerCase();
-    return terms.some((term) => text.includes(term));
-  });
-  const selectedIds = selectedBills.map((bill) => bill.bill_no);
-  const savedIds = savedBills.map((bill) => bill.bill_no);
+  const [searchVersion, setSearchVersion] = useState(0);
 
   // 다시 검색해도 비교 바구니는 비우지 않습니다. 다른 키워드의 법안끼리도 비교할 수 있습니다.
   function search(value) {
-    const nextQuery = value.trim();
-    if (!nextQuery) {
+    const nextQuery = value;
+    if (!nextQuery.trim()) {
       setInputError("검색어를 입력해 주세요.");
       return;
     }
     setInput(nextQuery);
     setQuery(nextQuery);
+    setSearchVersion((version) => version + 1);
     setInputError("");
   }
 
@@ -149,9 +141,9 @@ export default function SearchPage({
             </span>
             <h2>핵심 비교</h2>
             <ul>
-              <li>두 법안의 비슷한 내용</li>
-              <li>각 법안에만 있는 내용</li>
-              <li>공통점과 차이점 AI 요약</li>
+              <li>두 법안의 핵심 내용</li>
+              <li>주제별 차이점 비교</li>
+              <li>필요한 법안만 AI 요약</li>
             </ul>
           </article>
           <article className="feature-card">
@@ -176,74 +168,68 @@ export default function SearchPage({
       )}
 
       {query && (
-        <section
-          className="results-section page-width"
-          aria-labelledby="results-heading"
-        >
-          <div className="demo-note">
-            <Icon name="info" size={16} />
-            <span>
-              UI 미리보기 · 아래 내용은 실제 법률안 정보가 아닌 예시
-              데이터입니다.
-            </span>
-          </div>
-          <div className="results-heading">
-            <div>
-              <h2 id="results-heading">
-                ‘{query}’ 검색 결과 <span>{results.length}</span>
-              </h2>
-            </div>
-            <span className="sort-label">
-              <Icon name="sort" size={16} />
-              관련도순
-            </span>
-          </div>
-          <p className="selection-help" id="selection-help">
-            궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요.
-            다른 키워드로 검색해서 담아도 돼요.
-          </p>
-          <div className="sr-only" role="status" aria-live="polite">
-            검색 결과 {results.length}건. 비교할 법안 {selectedIds.length}개
-            선택됨.
-          </div>
-          {results.length ? (
-            <div className="bill-list">
-              {results.map((bill) => (
-                <BillCard
-                  key={bill.bill_no}
-                  bill={bill}
-                  selected={selectedIds.includes(bill.bill_no)}
-                  disabled={
-                    selectedIds.length === 2 &&
-                    !selectedIds.includes(bill.bill_no)
-                  }
-                  onToggle={() => onToggleCompare(bill)}
-                  saved={savedIds.includes(bill.bill_no)}
-                  onToggleSave={() => onToggleSave(bill)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <span className="empty-icon">
-                <Icon name="search" size={28} />
-              </span>
-              <h3>검색 결과가 없어요</h3>
-              <p>
-                다른 키워드로 검색해 보세요.
-                <br />
-                미리보기에서는 ‘월세 지원금’ 예시를 확인할 수 있어요.
-              </p>
-              <button
-                className="button button-soft"
-                onClick={() => search("월세 지원금")}
-              >
-                예시 검색해 보기
-              </button>
-            </div>
-          )}
-        </section>
+        <SearchResults
+          key={`${query}:${searchVersion}`}
+          query={query}
+          selectedBills={selectedBills}
+          savedBills={savedBills}
+          onToggleCompare={onToggleCompare}
+          onToggleSave={onToggleSave}
+          onRetry={() => setSearchVersion((version) => version + 1)}
+        />
       )}
     </div>
+  );
+}
+
+function SearchResults({ query, selectedBills, savedBills, onToggleCompare, onToggleSave, onRetry }) {
+  const [state, setState] = useState({ status: "loading", results: [] });
+  const selectedIds = selectedBills.map((bill) => bill.bill_no);
+  const savedIds = savedBills.map((bill) => bill.bill_no);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    searchBills(query, { signal: controller.signal }).then(({ ready, results }) => {
+      if (!controller.signal.aborted) setState({ status: ready ? "done" : "pending", results });
+    }).catch((error) => {
+      if (controller.signal.aborted) return;
+      setState({ status: error.code === "NOT_READY" ? "pending" : "error", message: error.message, results: [] });
+    });
+    return () => controller.abort();
+  }, [query]);
+
+  const { results } = state;
+  return (
+    <section className="results-section page-width" aria-labelledby="results-heading">
+      <div className="results-heading">
+        <h2 id="results-heading">‘{query}’ 검색 결과 {state.status === "done" && <span>{results.length}건</span>}</h2>
+        {state.status === "done" && <span className="sort-label"><Icon name="sort" size={16} />관련도순 · 최대 20건</span>}
+      </div>
+      {state.status === "loading" ? (
+        <RequestState loading title="법률안을 찾고 있어요" message="검색 결과를 불러오는 중입니다." />
+      ) : state.status === "pending" ? (
+        <RequestState title="데이터를 준비하고 있어요" message="법률안 데이터가 준비되면 다시 검색해 주세요." onRetry={onRetry} />
+      ) : state.status === "error" ? (
+        <RequestState error title="검색 결과를 불러오지 못했어요" message={state.message} onRetry={onRetry} />
+      ) : results.length === 0 ? (
+        <RequestState title="검색 결과가 없어요" message="다른 키워드로 검색해 보세요." />
+      ) : (
+        <>
+          <p className="selection-help" id="selection-help">
+            궁금한 법안 <strong>2개</strong>를 선택해 차이점을 비교해 보세요. 다른 키워드로 검색해서 담아도 돼요.
+          </p>
+          <div className="sr-only" role="status">검색 결과 {results.length}건. 비교할 법안 {selectedIds.length}개 선택됨.</div>
+          <div className="bill-list">
+            {results.map((bill) => (
+              <BillCard key={bill.bill_no} bill={bill}
+                selected={selectedIds.includes(bill.bill_no)}
+                disabled={selectedIds.length === 2 && !selectedIds.includes(bill.bill_no)}
+                onToggle={() => onToggleCompare(bill)}
+                saved={savedIds.includes(bill.bill_no)} onToggleSave={() => onToggleSave(bill)} />
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }
