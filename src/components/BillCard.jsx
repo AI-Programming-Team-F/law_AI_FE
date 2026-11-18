@@ -6,6 +6,7 @@ const STATUS = {
   PASSED: { label: "본회의 통과", className: "passed" },
   MERGED: { label: "대안에 반영(폐기)", className: "merged" },
   REVIEW: { label: "심사 중", className: "review" },
+  UNKNOWN: { label: "처리 결과 미제공", className: "other" },
   OTHER: { label: "기타", className: "other" },
 };
 
@@ -37,7 +38,7 @@ function Highlight({ text, keywords }) {
 }
 
 // AI 요약: 처음에는 버튼만 두고, 누른 법안만 서버에 요약을 요청합니다 (README 2-2, 8-2).
-function BillSummary({ bill }) {
+export function BillSummary({ bill }) {
   const billNo = bill.bill_no;
   const [state, setState] = useState(() => {
     const cached = getCachedSummary(billNo);
@@ -60,8 +61,8 @@ function BillSummary({ bill }) {
     try {
       const result = await getBillSummary(billNo);
       setState({ status: "done", summary: result.summary });
-    } catch {
-      setState({ status: "error" });
+    } catch (error) {
+      setState({ status: "error", message: error.message });
     }
   }
 
@@ -76,7 +77,7 @@ function BillSummary({ bill }) {
             className={state.summary ? "summary-text" : "summary-text summary-unavailable"}
           >
             {state.summary ? (
-              <Highlight text={state.summary} keywords={bill.matched_keywords} />
+              <Highlight text={state.summary} keywords={bill.matched_keywords || []} />
             ) : (
               "요약을 준비하지 못했어요. 원문 링크를 확인하세요."
             )}
@@ -85,7 +86,7 @@ function BillSummary({ bill }) {
         </>
       ) : state.status === "error" ? (
         <div className="summary-action">
-          <span className="summary-error">요약을 불러오지 못했어요.</span>
+          <span className="summary-error" role="alert">요약을 불러오지 못했어요. {state.message}</span>
           <button
             ref={retryRef}
             type="button"
@@ -151,27 +152,31 @@ export default function BillCard({
         </div>
       </div>
       <h3 id={`bill-${bill.bill_no}`}>
-        <a
-          href={bill.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${bill.bill_name} 원문 새 탭에서 보기`}
-        >
-          <Highlight text={bill.bill_name} keywords={bill.matched_keywords} />
-          <Icon name="external" size={17} />
-        </a>
+        {bill.link ? (
+          <a href={bill.link} target="_blank" rel="noopener noreferrer" aria-label={`${bill.bill_name} 원문 새 탭에서 보기`}>
+            <Highlight text={bill.bill_name} keywords={bill.matched_keywords || []} />
+            <Icon name="external" size={17} />
+          </a>
+        ) : bill.bill_name}
       </h3>
-      <p className="bill-meta">
-        <span>{bill.committee}</span>
-        <span className="meta-divider" aria-hidden="true">
-          ·
-        </span>
-        <span>{bill.propose_date} 발의</span>
-      </p>
+      {(bill.committee || bill.propose_date) && (
+        <p className="bill-meta">
+          {bill.committee && <span>{bill.committee}</span>}
+          {bill.committee && bill.propose_date && <span className="meta-divider" aria-hidden="true">·</span>}
+          {bill.propose_date && <span>{bill.propose_date} 발의</span>}
+        </p>
+      )}
+      {!bill.link && <p className="bill-meta">원문 링크가 제공되지 않았어요.</p>}
+      {bill.proposal_text && (
+        <details className="bill-original">
+          <summary>제안이유 및 주요내용</summary>
+          <p>{bill.proposal_text}</p>
+        </details>
+      )}
       <BillSummary bill={bill} />
       <div className="card-bottom">
         <div className="keyword-tags" aria-label="매칭된 키워드">
-          {bill.matched_keywords.map((keyword) => (
+          {(bill.matched_keywords || []).map((keyword) => (
             <span key={keyword}>#{keyword}</span>
           ))}
         </div>

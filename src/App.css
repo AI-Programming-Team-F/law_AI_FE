@@ -1299,3 +1299,15 @@
     padding: 22px;
   }
 }
+
+
+/* 실제 API의 원문·요청 상태와 주제별 비교 행 */
+.bill-original { margin-top: 16px; font-size: 15px; line-height: 1.75; }
+.bill-original summary { cursor: pointer; color: var(--navy); }
+.bill-original p { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 12px; }
+.request-state .summary-spinner { display: inline-block; margin-bottom: 12px; }
+.request-state p, .differences p { overflow-wrap: anywhere; }
+.differences p { margin-top: 12px; white-space: pre-wrap; line-height: 1.75; }
+.comparison-card .summary-box { margin-top: 20px; }
+.results-heading h2 { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .summary-spinner { animation: none; } }

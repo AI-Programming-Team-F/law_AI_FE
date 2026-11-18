@@ -15,7 +15,7 @@ import Icon from "./components/Icon";
 import Logo from "./components/Logo";
 import "./App.css";
 
-const SAVED_KEY = "beopan-itda:saved-bills";
+const SAVED_KEY = "beopan-itda:saved-bills:v2";
 
 // 저장한 법안은 로그인 기능이 없어서 이 브라우저(localStorage)에만 보관합니다.
 function loadSavedBills() {
@@ -129,7 +129,7 @@ function AppLayout() {
                 />
               }
             />
-            <Route path="/compare" element={<ComparePage />} />
+            <Route path="/compare" element={<ComparePage knownBills={[...selectedBills, ...savedBills]} />} />
             <Route
               path="*"
               element={
