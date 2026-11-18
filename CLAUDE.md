@@ -14,8 +14,9 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 
 ## 현재 코드 상태 (README 권장 구조와 다른 점)
 
-- 서버 미연결. 모든 데이터는 [src/api/mock.js](src/api/mock.js)에서 옵니다 (`MOCK_SEARCH_RESULTS`, `MOCK_COMPARE_RESULT`).
-- `client.js`, `bills.js`는 아직 없습니다. 서버 연결 시 README 9장 구조대로 `src/api/`에 추가합니다.
+- 서버 미연결. 모든 데이터는 [src/api/mock.js](src/api/mock.js)에서 옵니다 (`MOCK_SEARCH_RESULTS`, `MOCK_SUMMARIES`, `MOCK_COMPARE_RESULT`).
+- [src/api/bills.js](src/api/bills.js)에는 법안 요약 요청(`getBillSummary`)만 있습니다. 지금은 mock을 0.8초 뒤 돌려주고, 서버 연결 시 `requestSummary`만 실제 호출로 바꿉니다. `client.js`와 검색·비교 호출은 서버 연결 시 README 9장 구조대로 추가합니다.
+- AI 요약은 토큰 절약을 위해 **미리 만들지 않습니다.** 검색 결과에는 `summary`가 없고, 카드의 `AI 요약 확인하기`를 누른 법안만 요청합니다(README 2-2, 8-2). 받은 요약은 `bills.js`에 저장해 다시 요청하지 않습니다. 비교 화면의 두 법안 요약은 비교 API가 함께 줍니다.
 - 검색어·비교 바구니·저장 목록은 [src/App.jsx](src/App.jsx)의 `useState`로 들고 props로 넘깁니다 (Context 아님).
   - 비교 바구니(`selectedBills`)는 의안번호가 아니라 **법안 객체**를 담습니다. 다시 검색해도 비우지 않습니다 (다른 키워드 법안끼리 비교 가능).
   - 저장 목록(`savedBills`)은 localStorage(`beopan-itda:saved-bills`)에 보관합니다. 서버 API 없음.
@@ -26,8 +27,11 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 - 레이아웃: 왼쪽 사이드바(로고 + `유사법안 검색`·`저장한 법안` 메뉴) + 오른쪽 본문. 760px 이하에서는 사이드바가 상단 가로 바로 바뀝니다. 비교 화면은 검색 결과에서 들어가므로 메뉴에 따로 두지 않습니다.
 - 검색 전에는 기능 소개 카드 3개, 검색 후에는 결과 목록이 보입니다.
 - 스타일은 [src/App.css](src/App.css) 한 파일 (CSS 프레임워크 없음). 색 변수는 [src/index.css](src/index.css)에 있습니다.
-- 디자인 톤: 어두운 바탕(`--bg` #172029) 위에 밝은 종이 카드(`--paper` #e6eaf0). 강조는 철청색(`--steel`)과 민트(`--mint`). 긴 글(요약, 비교)은 항상 종이 카드 위 어두운 글씨로 둡니다. 글꼴은 Pretendard(index.html에서 CDN으로 불러옴), 최소 13px, 본문 16px.
-- 로고([src/components/Logo.jsx](src/components/Logo.jsx))는 대각선으로 누운 사슬 고리 두 개가 서로 걸린 모양입니다(교차점은 mask로 틈을 냄). 색은 `--logo-a`(밝은 철청색)·`--logo-b`(민트).
+- 디자인 톤: 밝은 테마. 흰 바탕(`--page`)에 가는 선(`--line`)으로 면을 나누고, 그림자는 하단 비교 바구니에만 씁니다. 색은 로고의 남색(`--navy` #1f3a8a) 하나를 중심으로 쓰고 파랑(`--blue`)은 포커스·링크에만 씁니다. 어두운 면은 비교 바구니(`--dock`)뿐입니다. 장식용 그라데이션·원·아이콘 배경 원은 쓰지 않습니다.
+- 글꼴: 제목은 부리 글꼴 Hahmlet(`--font-display`), 본문·버튼은 Pretendard(`--font-body`). 둘 다 index.html에서 CDN으로 불러옵니다. 최소 13px, 본문 16px.
+- 검색어와 맞은 단어(`<mark>`)는 글자 아래쪽 절반만 칠하는 노란 형광펜(`--highlight`)입니다.
+- 760px 이하는 모바일, 1040px 이하는 기능 소개 세 칸과 비교 바구니가 세로로 쌓입니다.
+- 로고([src/components/Logo.jsx](src/components/Logo.jsx))는 대각선으로 누운 사슬 고리 두 개가 서로 걸린 모양입니다(교차점은 mask로 틈을 냄). 색은 `--logo-a`(남색)·`--logo-b`(파랑).
 - Vite 프록시 `/api → http://localhost:8000`은 [vite.config.js](vite.config.js)에 이미 설정되어 있습니다.
 
 구조를 README 권장안 쪽으로 옮기는 리팩터링은 요청받았을 때만 합니다.
@@ -54,6 +58,7 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 
 ### 빈 값 처리
 - `summary: null` → "요약을 준비하지 못했어요. 원문 링크를 확인하세요"
+- 요약 요청 실패 → "요약을 불러오지 못했어요" + `다시 시도` 버튼
 - `ai_summary: null` → AI 비교 요약 영역 숨김, 문장 비교만 표시
 - `results: []` → "검색 결과가 없어요. 다른 키워드로 검색해 보세요"
 

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+import { getBillSummary, getCachedSummary } from "../api/bills";
 import Icon from "./Icon";
 
 const STATUS = {
@@ -32,6 +34,91 @@ function Highlight({ text, keywords }) {
         part
       ),
     );
+}
+
+// AI 요약: 처음에는 버튼만 두고, 누른 법안만 서버에 요약을 요청합니다 (README 2-2, 8-2).
+function BillSummary({ bill }) {
+  const billNo = bill.bill_no;
+  const [state, setState] = useState(() => {
+    const cached = getCachedSummary(billNo);
+    return cached ? { status: "done", summary: cached.summary } : { status: "idle" };
+  });
+  const textRef = useRef(null);
+  const retryRef = useRef(null);
+  const requested = useRef(false);
+
+  // 버튼을 눌러 결과가 나오면 사라진 버튼 대신 요약 글(실패하면 다시 시도 버튼)로 포커스를 옮깁니다.
+  useEffect(() => {
+    if (!requested.current || state.status === "loading") return;
+    requested.current = false;
+    (state.status === "done" ? textRef : retryRef).current?.focus();
+  }, [state.status]);
+
+  async function load() {
+    requested.current = true;
+    setState({ status: "loading" });
+    try {
+      const result = await getBillSummary(billNo);
+      setState({ status: "done", summary: result.summary });
+    } catch {
+      setState({ status: "error" });
+    }
+  }
+
+  return (
+    <div className="summary-box">
+      <span className="summary-label">AI 요약</span>
+      {state.status === "done" ? (
+        <>
+          <p
+            ref={textRef}
+            tabIndex={-1}
+            className={state.summary ? "summary-text" : "summary-text summary-unavailable"}
+          >
+            {state.summary ? (
+              <Highlight text={state.summary} keywords={bill.matched_keywords} />
+            ) : (
+              "요약을 준비하지 못했어요. 원문 링크를 확인하세요."
+            )}
+          </p>
+          <small>AI가 생성한 요약이며 원문과 다를 수 있습니다.</small>
+        </>
+      ) : state.status === "error" ? (
+        <div className="summary-action">
+          <span className="summary-error">요약을 불러오지 못했어요.</span>
+          <button
+            ref={retryRef}
+            type="button"
+            className="summary-button"
+            onClick={load}
+          >
+            다시 시도
+          </button>
+        </div>
+      ) : (
+        <div className="summary-action">
+          <button
+            type="button"
+            className="summary-button"
+            onClick={load}
+            disabled={state.status === "loading"}
+            aria-busy={state.status === "loading"}
+            aria-label={`${bill.bill_name} AI 요약 확인하기`}
+          >
+            {state.status === "loading" ? (
+              <>
+                <span className="summary-spinner" aria-hidden="true" />
+                요약하는 중…
+              </>
+            ) : (
+              "AI 요약 확인하기"
+            )}
+          </button>
+          <span className="summary-hint">필요한 법안만 요약해요</span>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function BillCard({
@@ -81,17 +168,7 @@ export default function BillCard({
         </span>
         <span>{bill.propose_date} 발의</span>
       </p>
-      <div className="summary-box">
-        <span className="summary-label">AI 요약</span>
-        <p className={bill.summary ? "" : "summary-unavailable"}>
-          {bill.summary ? (
-            <Highlight text={bill.summary} keywords={bill.matched_keywords} />
-          ) : (
-            "요약을 준비하지 못했어요. 원문 링크를 확인하세요."
-          )}
-        </p>
-        <small>AI가 생성한 요약이며 원문과 다를 수 있습니다.</small>
-      </div>
+      <BillSummary bill={bill} />
       <div className="card-bottom">
         <div className="keyword-tags" aria-label="매칭된 키워드">
           {bill.matched_keywords.map((keyword) => (

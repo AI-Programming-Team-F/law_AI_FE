@@ -42,12 +42,10 @@ export default function CompareTray({ bills, onRemove }) {
           to={`/compare?${new URLSearchParams({ a: bills[0].bill_no, b: bills[1].bill_no })}`}
         >
           비교하기
-          <Icon name="arrow" size={17} />
         </Link>
       ) : (
         <button className="button button-primary" disabled>
           비교하기
-          <Icon name="arrow" size={17} />
         </button>
       )}
     </aside>
