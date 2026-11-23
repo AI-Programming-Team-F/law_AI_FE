@@ -2049,3 +2049,22 @@
     transform: none;
   }
 }
+
+/* 카드 메타: 소관위 · 발의자 · 발의일. 항목 단위로 줄바꿈하고, 줄 맨 앞의 구분선은 왼쪽 밖으로 밀어 가립니다 */
+.bill-meta.bill-meta-clip {
+  display: block;
+  overflow: hidden;
+}
+.bill-meta-items {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 2px;
+  margin-left: -21px;
+}
+.bill-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-left: 10px;
+}

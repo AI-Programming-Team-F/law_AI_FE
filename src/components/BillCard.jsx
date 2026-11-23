@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getBillSummary, getCachedSummary, STATUS_LABELS } from "../api/bills";
+import { useBillInfo } from "../hooks/useBillInfo";
 import Icon from "./Icon";
 import PersonalSummary from "./PersonalSummary";
 
@@ -47,6 +48,40 @@ function Highlight({ text, keywords }) {
         part
       ),
     );
+}
+
+// 소관위 · 발의자 · 발의일 (있는 값만 표시)
+export function BillMeta({ bill, info, showNumber = false }) {
+  const proposeDate = info?.propose_date || bill.propose_date;
+  const items = [
+    bill.committee,
+    info?.proposer,
+    proposeDate && `${proposeDate} 발의`,
+    showNumber && `의안번호 ${bill.bill_no}`,
+  ].filter(Boolean);
+  if (!items.length) return null;
+  return (
+    <p className="bill-meta bill-meta-clip">
+      <span className="bill-meta-items">
+        {items.map((item) => (
+          <span className="bill-meta-item" key={item}>
+            <span className="meta-divider" aria-hidden="true">·</span>
+            <span>{item}</span>
+          </span>
+        ))}
+      </span>
+    </p>
+  );
+}
+
+// 불러오는 중에는 표시하지 않아 문구가 깜빡이지 않게 합니다.
+export function BillLinkNotice({ status, link }) {
+  if (link || status === "loading") return null;
+  return (
+    <p className="bill-meta">
+      {status === "error" ? "원문 링크를 불러오지 못했어요." : "원문 링크가 제공되지 않았어요."}
+    </p>
+  );
 }
 
 // AI 요약: 처음에는 버튼만 두고, 누른 법안만 서버에 요약을 요청합니다 (README 2-2, 8-2).
@@ -154,11 +189,14 @@ export default function BillCard({
   // 검색어를 띄어쓰기로 나눈 단어로 제목과 원문의 일치 부분을 표시합니다.
   const terms = highlightTerms.filter(Boolean);
   const matchCount = countMatches(bill.proposal_text, terms);
+  const [cardRef, { status: infoStatus, info }] = useBillInfo(bill.bill_no);
+  const link = info?.link || bill.link || null;
   const highlightedTitle = (
     <Highlight text={bill.bill_name} keywords={terms.length ? terms : bill.matched_keywords || []} />
   );
   return (
     <article
+      ref={cardRef}
       className={`bill-card${selected ? " is-selected" : ""}`}
       aria-labelledby={`bill-${bill.bill_no}`}
     >
@@ -179,21 +217,15 @@ export default function BillCard({
         </div>
       </div>
       <h3 id={`bill-${bill.bill_no}`}>
-        {bill.link ? (
-          <a href={bill.link} target="_blank" rel="noopener noreferrer" aria-label={`${bill.bill_name} 원문 새 탭에서 보기`}>
+        {link ? (
+          <a href={link} target="_blank" rel="noopener noreferrer" aria-label={`${bill.bill_name} 원문 새 탭에서 보기`}>
             {highlightedTitle}
             <Icon name="external" size={17} />
           </a>
         ) : highlightedTitle}
       </h3>
-      {(bill.committee || bill.propose_date) && (
-        <p className="bill-meta">
-          {bill.committee && <span>{bill.committee}</span>}
-          {bill.committee && bill.propose_date && <span className="meta-divider" aria-hidden="true">·</span>}
-          {bill.propose_date && <span>{bill.propose_date} 발의</span>}
-        </p>
-      )}
-      {!bill.link && <p className="bill-meta">원문 링크가 제공되지 않았어요.</p>}
+      <BillMeta bill={bill} info={info} />
+      <BillLinkNotice status={infoStatus} link={link} />
       {bill.proposal_text && (
         <details className="bill-original">
           <summary>

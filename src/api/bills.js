@@ -10,6 +10,11 @@ const pendingProfiles = new Map();
 const happens = new Map();
 const pendingHappens = new Map();
 const lastHappens = new Map(); // 의안번호 → 마지막으로 본 맞춤 요약 { selection, result }
+const infos = new Map();
+const pendingInfos = new Map();
+const infoQueue = [];
+const MAX_INFO_REQUESTS = 3; // /info는 호출마다 국회 API를 다시 부르므로 동시 요청을 제한합니다.
+let activeInfoRequests = 0;
 
 function invalidResponse() {
   return new ApiError("서버 응답 형식이 명세와 달라요. 잠시 후 다시 시도해 주세요.", { code: "INVALID_RESPONSE" });
@@ -130,10 +135,9 @@ export function compareBills(a, b) {
   return cachedRequest(comparisons, pendingComparisons, key, async () => {
     const result = await request("/compare", { a_bill_no: a, b_bill_no: b });
     if (result.a_bill_no !== a || result.b_bill_no !== b || !Array.isArray(result.differences) ||
-        !result.differences.every((pair) => Array.isArray(pair) && pair.length === 2 && pair.every((text) => typeof text === "string"))) throw invalidResponse();
-    // 소제목은 선택 필드입니다. 개수가 맞지 않으면 다른 항목에 잘못 붙지 않도록 쓰지 않습니다.
-    const topics = isTextList(result.topics) && result.topics.length === result.differences.length ? result.topics : [];
-    const rows = result.differences.map(([a, b], index) => ({ topic: topics[index]?.trim() || null, a, b }));
+        !result.differences.every((row) => isTextList(row) && row.length === 3)) throw invalidResponse();
+    // 각 원소는 [소제목, A 내용, B 내용]입니다 (README 8-3).
+    const rows = result.differences.map(([topic, textA, textB]) => ({ topic: topic.trim() || null, a: textA, b: textB }));
     return { ...result, rows };
   });
 }
@@ -192,4 +196,54 @@ export async function getBillHappen(billNo, selection) {
   });
   lastHappens.set(billNo, { selection, result });
   return result;
+}
+
+function runInfoQueue() {
+  while (activeInfoRequests < MAX_INFO_REQUESTS && infoQueue.length) {
+    const { load, resolve, reject } = infoQueue.shift();
+    activeInfoRequests++;
+    load().then(resolve, reject).finally(() => {
+      activeInfoRequests--;
+      runInfoQueue();
+    });
+  }
+}
+
+function queueInfoRequest(load) {
+  return new Promise((resolve, reject) => {
+    infoQueue.push({ load, resolve, reject });
+    runInfoQueue();
+  });
+}
+
+// 서버 값이 국회 의안정보시스템 주소일 때만 https 링크로 사용합니다.
+function safeBillLink(value) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol) || url.hostname !== "likms.assembly.go.kr") return null;
+    url.protocol = "https:";
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function getCachedBillInfo(billNo) {
+  return infos.get(billNo);
+}
+
+// 원문 링크·발의자·발의일 (README 8-9)
+export function getBillInfo(billNo) {
+  return cachedRequest(infos, pendingInfos, billNo, () => queueInfoRequest(async () => {
+    const result = await request("/info", { billno: billNo }, { timeoutMs: 30000 });
+    const validFields = [result.PROPOSER, result.PROPOSE_DT, result.DETAIL_LINK]
+      .every((value) => value == null || isText(value));
+    if (result.BILL_NO !== billNo || !validFields) throw invalidResponse();
+    return {
+      link: safeBillLink(result.DETAIL_LINK),
+      proposer: result.PROPOSER?.trim() || null,
+      propose_date: result.PROPOSE_DT?.trim() || null,
+    };
+  }));
 }

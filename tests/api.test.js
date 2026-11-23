@@ -1,8 +1,8 @@
 import { afterEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { ApiError, request } from "../src/api/client.js";
-import { searchBills, normalizeStatus, getBillSummary, compareBills, getBillByNo, getBillProfile, getBillHappen, getLastHappen } from "../src/api/bills.js";
-import { MOCK_SEARCH_RESULTS, MOCK_COMPARE_RESULT, MOCK_PROFILE, MOCK_HAPPEN } from "../src/api/mock.js";
+import { searchBills, normalizeStatus, getBillSummary, compareBills, getBillByNo, getBillProfile, getBillHappen, getLastHappen, getBillInfo, getCachedBillInfo } from "../src/api/bills.js";
+import { MOCK_SEARCH_RESULTS, MOCK_COMPARE_RESULT, MOCK_PROFILE, MOCK_HAPPEN, MOCK_INFO } from "../src/api/mock.js";
 import { parseEmphasis } from "../src/utils/emphasis.js";
 
 const originalFetch = globalThis.fetch;
@@ -249,17 +249,15 @@ test("맞춤 요약: 처리 단계 변환, 잘못된 응답·실패는 저장하
   assert.equal((await getBillHappen("8200002", empty)).status, "REVIEW");
 });
 
-test("비교 소제목: 순서대로 연결, 없거나 개수가 다르면 소제목 없이 표시", async () => {
-  const base = { a_bill_no: "9100001", b_bill_no: "9100002", differences: [["A1", "B1"], ["A2", "B2"]] };
-  globalThis.fetch = async () => json({ ...base, topics: ["주제 1", " 주제 2 "] });
+test("비교 응답: [소제목, A, B]를 행으로 변환하고, 소제목이 비면 null, 예전 [A, B]는 거부", async () => {
+  const base = { a_bill_no: "9100001", b_bill_no: "9100002" };
+  globalThis.fetch = async () => json({ ...base, differences: [[" 유효기간 ", "A1", "B1"], ["", "A2", "B2"]] });
   assert.deepEqual((await compareBills("9100001", "9100002")).rows, [
-    { topic: "주제 1", a: "A1", b: "B1" },
-    { topic: "주제 2", a: "A2", b: "B2" },
+    { topic: "유효기간", a: "A1", b: "B1" },
+    { topic: null, a: "A2", b: "B2" },
   ]);
-  for (const [a, b, topics] of [["9100003", "9100004", undefined], ["9100005", "9100006", ["주제 1"]], ["9100007", "9100008", "주제"]]) {
-    globalThis.fetch = async () => json({ ...base, a_bill_no: a, b_bill_no: b, topics });
-    assert.deepEqual((await compareBills(a, b)).rows.map((row) => row.topic), [null, null]);
-  }
+  globalThis.fetch = async () => json({ a_bill_no: "9100003", b_bill_no: "9100004", differences: [["A", "B"]] });
+  await assert.rejects(compareBills("9100003", "9100004"), { code: "INVALID_RESPONSE" });
 });
 
 test("비교 강조 표시: 핵심·굵은 글씨를 나누고 짝이 안 맞으면 글자 그대로", () => {
@@ -272,4 +270,51 @@ test("비교 강조 표시: 핵심·굵은 글씨를 나누고 짝이 안 맞으
   ]);
   assert.deepEqual(parseEmphasis("표시 없음"), [{ type: "text", text: "표시 없음" }]);
   assert.deepEqual(parseEmphasis("짝이 ==안 맞음"), [{ type: "text", text: "짝이 ==안 맞음" }]);
+});
+
+test("상세 정보: 링크를 https로 바꾸고 발의자·발의일 변환, 성공 결과 재사용", async () => {
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    calls++;
+    const parsed = new URL(url, "http://localhost");
+    assert.equal(parsed.pathname, "/api/info");
+    assert.equal(parsed.searchParams.get("billno"), "9200001");
+    return json({ ...MOCK_INFO, BILL_NO: "9200001" });
+  };
+  assert.deepEqual(await getBillInfo("9200001"), {
+    link: "https://likms.assembly.go.kr/bill/billDetail.do?billId=EXAMPLE",
+    proposer: "예시의원 등 10인",
+    propose_date: "2026-01-01",
+  });
+  await getBillInfo("9200001");
+  assert.equal(calls, 1);
+  assert.equal(getCachedBillInfo("9200001").proposer, "예시의원 등 10인");
+});
+
+test("상세 정보: 국회 주소가 아닌 링크는 쓰지 않고, 잘못된 응답·실패는 저장하지 않음", async () => {
+  for (const [billNo, link] of [["9200002", "javascript:alert(1)"], ["9200003", "https://example.com/bill"], ["9200004", "주소 아님"], ["9200005", null]]) {
+    globalThis.fetch = async () => json({ ...MOCK_INFO, BILL_NO: billNo, DETAIL_LINK: link });
+    assert.equal((await getBillInfo(billNo)).link, null);
+  }
+  globalThis.fetch = async () => json({ ...MOCK_INFO, BILL_NO: "다른 번호" });
+  await assert.rejects(getBillInfo("9200006"), { code: "INVALID_RESPONSE" });
+  globalThis.fetch = async () => json({ detail: "없음" }, 404);
+  await assert.rejects(getBillInfo("9200006"), { status: 404 });
+  assert.equal(getCachedBillInfo("9200006"), undefined);
+  globalThis.fetch = async () => json({ ...MOCK_INFO, BILL_NO: "9200006" });
+  assert.equal((await getBillInfo("9200006")).proposer, "예시의원 등 10인");
+});
+
+test("상세 정보: 동시에 최대 3건만 요청", async () => {
+  let active = 0;
+  let peak = 0;
+  globalThis.fetch = async (url) => {
+    active++;
+    peak = Math.max(peak, active);
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    active--;
+    return json({ ...MOCK_INFO, BILL_NO: new URL(url, "http://localhost").searchParams.get("billno") });
+  };
+  await Promise.all(Array.from({ length: 8 }, (_, index) => getBillInfo(`93000${index}`)));
+  assert.equal(peak, 3);
 });

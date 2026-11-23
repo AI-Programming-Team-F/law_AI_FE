@@ -30,9 +30,14 @@ export const MOCK_HAPPEN = {
   evidence: ["제안이유 및 주요내용 예시 A"],
   stage: "심사 중",
 };
+export const MOCK_INFO = {
+  BILL_NO: "0000001",
+  PROPOSER: "예시의원 등 10인",
+  PROPOSE_DT: "2026-01-01",
+  DETAIL_LINK: "http://likms.assembly.go.kr/bill/billDetail.do?billId=EXAMPLE",
+};
 export const MOCK_COMPARE_RESULT = {
   a_bill_no: "0000001",
   b_bill_no: "0000002",
-  topics: ["비교 주제 예시"],
-  differences: [["같은 주제에 관한 ==A의 핵심== 내용 예시", "같은 주제에 관한 **B의 강조** 내용 예시"]],
+  differences: [["비교 주제 예시", "같은 주제에 관한 A의 내용 예시", "같은 주제에 관한 B의 내용 예시"]],
 };
