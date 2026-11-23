@@ -33,8 +33,9 @@ function errorMessage(body, status) {
   })[status] || `서버 요청에 실패했어요. (HTTP ${status})`;
 }
 
-export async function request(path, params = {}, { signal, timeoutMs = 90000 } = {}) {
-  const query = new URLSearchParams(params);
+// body를 넘기면 JSON POST, 없으면 GET으로 요청합니다.
+export async function request(path, params = {}, { signal, timeoutMs = 90000, body: requestBody } = {}) {
+  const query = new URLSearchParams(params).toString();
   const controller = new AbortController();
   const abort = () => controller.abort();
   if (signal?.aborted) controller.abort();
@@ -46,9 +47,13 @@ export async function request(path, params = {}, { signal, timeoutMs = 90000 } =
   }, timeoutMs);
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}?${query}`, {
+    const response = await fetch(`${API_BASE_URL}${path}${query ? `?${query}` : ""}`, {
       signal: controller.signal,
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(requestBody === undefined ? {} : { "Content-Type": "application/json" }),
+      },
+      ...(requestBody === undefined ? {} : { method: "POST", body: JSON.stringify(requestBody) }),
     });
     const body = await response.json().catch(() => null);
     if (!response.ok) {

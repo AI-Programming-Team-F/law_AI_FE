@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getBillSummary, getCachedSummary, STATUS_LABELS } from "../api/bills";
 import Icon from "./Icon";
+import PersonalSummary from "./PersonalSummary";
 
 const STATUS = {
   PASSED: { label: STATUS_LABELS.PASSED, className: "passed" },
@@ -49,7 +50,8 @@ function Highlight({ text, keywords }) {
 }
 
 // AI 요약: 처음에는 버튼만 두고, 누른 법안만 서버에 요약을 요청합니다 (README 2-2, 8-2).
-export function BillSummary({ bill }) {
+// personal이면 요약 아래에 "이 법안이 적용되면?"을 이어서 보여줍니다 (검색·저장 카드만).
+export function BillSummary({ bill, personal = false }) {
   const billNo = bill.bill_no;
   const [state, setState] = useState(() => {
     const cached = getCachedSummary(billNo);
@@ -94,6 +96,12 @@ export function BillSummary({ bill }) {
             )}
           </p>
           <small>AI가 생성한 요약이며 원문과 다를 수 있습니다.</small>
+          {personal && state.summary && (
+            <PersonalSummary
+              bill={bill}
+              renderStage={(status) => <StatusBadge status={status} />}
+            />
+          )}
         </>
       ) : state.status === "error" ? (
         <div className="summary-action">
@@ -198,11 +206,15 @@ export default function BillCard({
         </details>
       )}
       {showSimilarity && Number.isFinite(bill.score) && (
-        <p className="bill-similarity" title="서버에서 제공한 검색 유사도 점수입니다.">
-          유사도 <strong>{bill.score.toLocaleString("ko-KR")}점</strong>
+        <p className="bill-similarity" title="서버가 키워드와 의미 유사도로 계산한 관련도입니다.">
+          관련도 <strong>{Math.round(bill.score * 100)}%</strong>
         </p>
       )}
-      <BillSummary bill={bill} />
+      {bill.proposal_text === "" ? (
+        <p className="bill-meta">제안이유 및 주요내용이 아직 등록되지 않아 AI 요약을 제공할 수 없어요.</p>
+      ) : (
+        <BillSummary bill={bill} personal />
+      )}
       <div className="card-bottom">
         <div className="keyword-tags" aria-label="매칭된 키워드">
           {(bill.matched_keywords || []).map((keyword) => (

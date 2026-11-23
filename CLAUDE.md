@@ -16,14 +16,15 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 
 - React 화면·기존 디자인을 유지하고 실제 Railway API에 연결했다. 현재 API의 기준은 README 8장과 배포 서버 `/docs`다. `docs/`의 PDF·Word는 11월 11일 당시 논의 기록이다.
 - 서버 호출은 `src/api/client.js`, 필드 변환·요약/비교 캐시는 `src/api/bills.js`에 있다. 실행 화면에서 `mock.js`를 import하지 않는다. mock은 실제 응답 형태의 테스트 fixture다.
-- 검색은 `/search?query=...`, 요약은 `/summary?bill_no=...`, 비교는 GET `/compare?a_bill_no=...&b_bill_no=...`다. `/preprocess`는 앱에서 호출하지 않는다.
+- 검색은 `/search?query=...`, 의안번호 조회는 `/search/billno?billno=...`, 요약은 `/summary?bill_no=...`, 비교는 GET `/compare?a_bill_no=...&b_bill_no=...`, 맞춤 요약은 `/profile?bill_no=...`와 POST `/happen`이다. `/preprocess`는 앱에서 호출하지 않는다.
+- 맞춤 요약은 [src/components/PersonalSummary.jsx](src/components/PersonalSummary.jsx)다. 검색·저장 카드에서 AI 요약이 나온 뒤에만 `이 법안이 적용되면?` → 조건 선택 → `맞춤 요약 보기` 순서로 요청한다. 비교 화면에는 넣지 않는다.
 - Vite 개발·preview 프록시는 `/api` 접두사를 제거해 Railway로 전달한다. 배포 시 별도 프록시 또는 `VITE_API_BASE_URL` + BE CORS가 필요하다(README 7장).
 - 요약은 검색·저장·비교 화면 모두 버튼을 누른 법안만 요청한다. 비교 API는 개별 요약을 함께 주지 않는다.
-- 비교 응답은 `differences: [[A, B], ...]`다. 주제별 쌍을 행마다 나란히 표시한다. 공통점·유사도·종합 비교 요약은 API 미제공으로 표시하지 않는다.
-- 소관위 필터는 `src/filters/committees.js`의 사용자 지정 17개 목록을 쓴다. API의 선택 확장 필드 `COMMITTEE`를 `committee`로 변환하도록 준비했지만 현재 배포 응답에는 없다. 정보가 없으면 별도 분류하며 제목·본문에서 추정하지 않는다. 정렬·처리 단계와 교차 적용하고 변경 시 1페이지로 돌아간다.
+- 비교 응답은 `differences: [[A, B], ...]`이고 선택 필드 `topics`(소제목)를 함께 받는다. 번호·소제목 아래에 A VS B로 표시하고, 소제목이 없으면 `비교 항목`으로 둔다. FE에서 소제목을 지어내지 않는다. 공통점·유사도·종합 비교 요약은 API 미제공으로 표시하지 않는다.
+- 소관위 필터는 `src/filters/committees.js`의 사용자 지정 17개 목록을 쓴다. API의 `COMMITTEE`를 `committee`로 변환한다. 값이 null이면 별도 분류하며 제목·본문에서 추정하지 않는다. 정렬·처리 단계와 교차 적용하고 변경 시 1페이지로 돌아간다.
 - 발의일·원문 링크·매칭 키워드는 현재 미제공이므로 지어내지 않는다. 원문 링크 미제공 안내와 `SUMMARY` 원문을 접어 표시한다. `SUMMARY`는 AI 요약이 아니다.
 - App의 props로 검색어·법안 객체 비교 바구니·저장 목록을 공유한다. 저장 키는 `beopan-itda:saved-bills:v2`다. 예전 예시 저장 목록은 삭제하지 않고 별도 키로 보존한다.
-- 공유 비교 링크는 검색 결과 없이도 요청한다. 상세 API가 없으므로 이름을 알 수 없을 때는 의안번호와 상태 미제공으로 표시한다.
+- 공유 비교 링크는 검색 결과 없이도 요청하고 `/search/billno`로 법안 정보를 채운다. 조회에 실패하면 의안번호와 상태 미제공으로 표시한다.
 - 검색 로딩·준비 중·빈 결과·실패, AI 요청 실패·재시도를 처리한다. 검색 변경 시 이전 요청을 취소한다.
 - 스타일은 `src/App.css`, 색 변수는 `src/index.css`, 로고는 `src/components/Logo.jsx`다. 기존 반응형 레이아웃과 디자인을 유지한다.
 - `npm test`는 Node 내장 러너로 API 계약·원문/AI 구분·처리 상태·캐시·오류·취소를 검증한다. 변경 후 `npm test`, `npm run lint`, `npm run build`를 실행한다.
