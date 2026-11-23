@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { compareBills, getBillByNo, getCachedBill } from "../api/bills";
-import { BillSummary, StatusBadge } from "../components/BillCard";
+import { BillLinkNotice, BillMeta, BillSummary, StatusBadge } from "../components/BillCard";
+import { useBillInfo } from "../hooks/useBillInfo";
 import RequestState from "../components/RequestState";
 import Icon from "../components/Icon";
 import { parseEmphasis } from "../utils/emphasis";
@@ -45,25 +46,33 @@ export default function ComparePage({ knownBills = [] }) {
       <p className="compare-intro">주제별 차이점을 나란히 살펴보세요.</p>
       <div className="comparison-grid">
         {bills.map((bill, index) => (
-          <article className="comparison-card" key={bill.bill_no}>
-            <div className="card-topline">
-              <span className="comparison-letter">법안 {index === 0 ? "A" : "B"}</span>
-              <StatusBadge status={bill.status} />
-            </div>
-            <h2>{bill.bill_name}</h2>
-            <p className="bill-meta">{bill.committee && `${bill.committee} · `}의안번호 {bill.bill_no}</p>
-            <BillSummary key={bill.bill_no} bill={bill} />
-            {bill.link ? (
-              <a className="text-link" href={bill.link} target="_blank" rel="noopener noreferrer">
-                원문 보기<Icon name="external" size={15} /><span className="sr-only"> (새 탭)</span>
-              </a>
-            ) : <p className="bill-meta">원문 링크가 제공되지 않았어요.</p>}
-          </article>
+          <ComparisonCard key={bill.bill_no} bill={bill} letter={index === 0 ? "A" : "B"} />
         ))}
       </div>
       <ComparisonResult key={JSON.stringify([a, b, version])} a={a} b={b} onRetry={() => setVersion((value) => value + 1)} />
       <p className="compare-intro">법률 자문이 아닌 정보 안내입니다. 정확한 내용은 원문을 확인하세요.</p>
     </section>
+  );
+}
+
+function ComparisonCard({ bill, letter }) {
+  const [cardRef, { status, info }] = useBillInfo(bill.bill_no);
+  const link = info?.link || bill.link || null;
+  return (
+    <article className="comparison-card" ref={cardRef}>
+      <div className="card-topline">
+        <span className="comparison-letter">법안 {letter}</span>
+        <StatusBadge status={bill.status} />
+      </div>
+      <h2>{bill.bill_name}</h2>
+      <BillMeta bill={bill} info={info} showNumber />
+      <BillSummary bill={bill} />
+      {link ? (
+        <a className="text-link" href={link} target="_blank" rel="noopener noreferrer">
+          원문 보기<Icon name="external" size={15} /><span className="sr-only"> (새 탭)</span>
+        </a>
+      ) : <BillLinkNotice status={status} link={link} />}
+    </article>
   );
 }
 
