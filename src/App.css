@@ -600,6 +600,10 @@
   background: var(--tint);
   color: var(--navy);
 }
+.save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
 .bill-card h3 {
   margin-top: 14px;
   font-family: var(--font-display);
@@ -908,13 +912,127 @@
   margin-left: 8px;
   font-variant-numeric: tabular-nums;
 }
+/* '저장한 법안' 소제목 아래 설명: '저장한 비교' 설명과 같은 크기·간격 */
 .saved-intro {
-  margin: 8px 0 28px;
+  margin: 4px 0 14px;
   color: var(--ink-muted);
-  font-size: 16px;
+  font-size: 15px;
 }
 .saved-intro strong {
   color: var(--ink);
+}
+
+/* 저장한 비교 목록 */
+.saved-compares {
+  margin: 24px 0 44px;
+}
+.saved-compares h2,
+.saved-subheading {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.saved-compares h2 > span,
+.saved-subheading > span {
+  margin-left: 6px;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+/* 저장한 비교가 없으면 맨 위 제목 바로 아래에 옵니다 */
+.saved-page > h1 + .saved-subheading {
+  margin-top: 24px;
+}
+.saved-compares-intro {
+  margin-top: 4px;
+  color: var(--ink-muted);
+  font-size: 15px;
+}
+.saved-compares ul {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sheet);
+}
+/* 한 줄: [법안 A] VS [법안 B] [저장됨]. A·B 글 칸이 같은 너비라 VS가 두 법안 사이 가운데에 옵니다. */
+.saved-compare {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px 24px;
+  padding: 16px 20px;
+}
+.saved-compare + .saved-compare {
+  border-top: 1px solid var(--line);
+}
+/* 줄 전체를 덮는 링크. 저장됨 버튼만 그 위에 올려 따로 누를 수 있게 합니다. */
+.saved-compare-link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: 10px;
+}
+.saved-compare-link:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+.saved-compare:hover .saved-compare-side > span {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.saved-compare > .save-button {
+  position: relative;
+  z-index: 2;
+}
+.saved-compare-side {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.saved-compare-side small {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-text);
+}
+.saved-compare-side.is-b small {
+  color: #17643f;
+}
+.saved-compare-side > span {
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.saved-compare-vs {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+@media (max-width: 760px) {
+  .saved-compare {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .saved-compare-vs {
+    justify-self: center;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .saved-compare > .save-button {
+    justify-self: end;
+    margin-top: 2px;
+  }
 }
 
 /* ---------- 비교 화면 ---------- */
@@ -932,12 +1050,34 @@
 .back-link:hover {
   color: var(--navy);
 }
-.compare-page > h1 {
+.compare-head h1 {
   font-family: var(--font-display);
   font-size: 32px;
   font-weight: 600;
   line-height: 1.4;
   letter-spacing: -0.02em;
+}
+/* 제목과 '비교 저장' 버튼을 한 줄에 둡니다 (좁으면 버튼이 아래로) */
+.compare-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.compare-save {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* 비교 카드 안의 맞춤 요약(읽기 전용): 접어 두고 펼치면 결과만 */
+.bill-original.compare-personal {
+  margin-top: 14px;
+}
+.compare-personal .personal-result {
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
 }
 .compare-intro {
   color: var(--ink-muted);
@@ -961,6 +1101,10 @@
   color: var(--navy);
   font-size: 17px;
   font-weight: 700;
+}
+/* 법안 B는 비교 결과의 '법안 B'와 같은 초록색 */
+.comparison-letter.is-b {
+  color: #17643f;
 }
 .comparison-card h2 {
   font-family: var(--font-display);
@@ -1295,7 +1439,7 @@
   .saved-page h1 {
     font-size: 26px;
   }
-  .compare-page > h1 {
+  .compare-head h1 {
     font-size: 26px;
   }
   .comparison-grid {

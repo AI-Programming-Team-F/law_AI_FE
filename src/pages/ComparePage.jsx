@@ -1,22 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { compareBills, getBillByNo, getCachedBill } from "../api/bills";
+import { compareBills, getBillByNo, getCachedBill, getCachedSummary, getLastHappen } from "../api/bills";
 import { BillLinkNotice, BillMeta, BillSummary, StatusBadge } from "../components/BillCard";
+import { SavedPersonalResult } from "../components/PersonalSummary";
 import { useBillInfo } from "../hooks/useBillInfo";
 import RequestState from "../components/RequestState";
 import Icon from "../components/Icon";
 import { parseEmphasis } from "../utils/emphasis";
+import { isSameCompare } from "../utils/savedCompares";
 
-export default function ComparePage({ knownBills = [] }) {
+const renderStage = (status) => <StatusBadge status={status} />;
+
+// 저장할 법안 정보 (카드 제목·상태·소관위에 필요한 것만)
+function pickBill(bill) {
+  return {
+    bill_no: bill.bill_no,
+    bill_name: bill.bill_name,
+    status: bill.status,
+    process_result: bill.process_result ?? null,
+    committee: bill.committee ?? null,
+  };
+}
+
+export default function ComparePage({ knownBills = [], savedCompares = [], compareActions }) {
   const [params] = useSearchParams();
   const a = params.get("a");
   const b = params.get("b");
+  const pairKey = `${a}:${b}`;
   const [version, setVersion] = useState(0);
   const [loadedBills, setLoadedBills] = useState({});
+  // 화면에 나온 비교 결과(저장할 때 씀). 다른 두 법안으로 바뀌면 쓰지 않습니다.
+  const [shown, setShown] = useState(null);
+  const saved = savedCompares.find((item) => isSameCompare(item, a, b));
+  const current = shown?.key === pairKey ? shown.result : null;
 
-  // 공유 링크로 바로 들어온 법안은 의안번호로 이름·소관위·처리 상태를 채웁니다.
+  // 공유 링크로 바로 들어온 법안은 의안번호로 이름·소관위·처리 상태를 채웁니다. 저장한 비교는 저장된 정보를 씁니다.
+  const isSaved = Boolean(saved);
   useEffect(() => {
-    if (!/^\d+$/.test(a || "") || !/^\d+$/.test(b || "") || a === b) return undefined;
+    if (isSaved || !/^\d+$/.test(a || "") || !/^\d+$/.test(b || "") || a === b) return undefined;
     const controller = new AbortController();
     [a, b].filter((billNo) => !getCachedBill(billNo)).forEach((billNo) => {
       getBillByNo(billNo, { signal: controller.signal })
@@ -24,7 +45,18 @@ export default function ComparePage({ knownBills = [] }) {
         .catch(() => {}); // 조회에 실패해도 비교는 의안번호로 계속 보여줍니다.
     });
     return () => controller.abort();
-  }, [a, b]);
+  }, [a, b, isSaved]);
+
+  const handleResult = useCallback((result) => {
+    const key = `${a}:${b}`;
+    setShown((previous) => (previous?.key === key && previous.result === result ? previous : { key, result }));
+  }, [a, b, setShown]);
+
+  // 저장한 비교에 저장 뒤 받은 AI 요약·맞춤 요약을 더합니다 (이미 있으면 그대로 둡니다).
+  const addSummary = useCallback((billNo, summary) => compareActions.update(a, b, (item) =>
+    Object.hasOwn(item.summaries, billNo) ? item : { ...item, summaries: { ...item.summaries, [billNo]: summary } }), [compareActions, a, b]);
+  const addHappen = useCallback((billNo, happen) => compareActions.update(a, b, (item) =>
+    item.happens[billNo] ? item : { ...item, happens: { ...item.happens, [billNo]: { selection: happen.selection, result: happen.result } } }), [compareActions, a, b]);
 
   if (!a || !b || !/^\d+$/.test(a) || !/^\d+$/.test(b) || a === b) {
     return (
@@ -36,37 +68,108 @@ export default function ComparePage({ knownBills = [] }) {
       </section>
     );
   }
-  const bills = [a, b].map((billNo) => loadedBills[billNo] || getCachedBill(billNo) || knownBills.find((bill) => bill.bill_no === billNo) || {
+  const bills = [a, b].map((billNo, index) => loadedBills[billNo] || getCachedBill(billNo) ||
+    (saved && saved.bills[index === 0 ? "a" : "b"]) || knownBills.find((bill) => bill.bill_no === billNo) || {
     bill_no: billNo, bill_name: `의안번호 ${billNo}`, status: "UNKNOWN", matched_keywords: [],
   });
+
+  // 지금 화면의 비교 결과와, 이미 받아 둔 AI 요약·맞춤 요약을 함께 저장합니다.
+  function toggleSaved() {
+    if (saved) {
+      compareActions.remove(a, b);
+      return;
+    }
+    if (!current) return;
+    const summaries = {};
+    const happens = {};
+    bills.forEach((bill) => {
+      const summary = getCachedSummary(bill.bill_no);
+      if (summary) summaries[bill.bill_no] = summary.summary;
+      const happen = getLastHappen(bill.bill_no);
+      if (happen) happens[bill.bill_no] = { selection: happen.selection, result: happen.result };
+    });
+    compareActions.save({
+      a, b,
+      bills: { a: pickBill(bills[0]), b: pickBill(bills[1]) },
+      rows: current.rows,
+      summaries,
+      happens,
+      savedAt: new Date().toISOString(),
+    });
+  }
+
   return (
     <section className="compare-page page-width">
       <Link className="back-link" to="/search">← 법률안 검색으로</Link>
-      <h1>두 법안, 어떤 점이 다를까요?</h1>
+      <div className="compare-head">
+        <h1>두 법안, 어떤 점이 다를까요?</h1>
+        <div className="compare-save">
+          <button
+            type="button"
+            className={`save-button${saved ? " is-saved" : ""}`}
+            onClick={toggleSaved}
+            disabled={!saved && !current}
+            aria-pressed={Boolean(saved)}
+            title={!saved && !current ? "비교 결과가 나온 뒤 저장할 수 있어요" : undefined}
+          >
+            <Icon name={saved ? "bookmarkFilled" : "bookmark"} size={17} />
+            <span>{saved ? "비교 저장됨" : "비교 저장"}</span>
+          </button>
+        </div>
+      </div>
       <p className="compare-intro">주제별 차이점을 나란히 살펴보세요.</p>
       <div className="comparison-grid">
-        {bills.map((bill, index) => (
-          <ComparisonCard key={bill.bill_no} bill={bill} letter={index === 0 ? "A" : "B"} />
+        {bills.map((bill) => (
+          <ComparisonCard
+            key={bill.bill_no}
+            bill={bill}
+            letter={bill.bill_no === a ? "A" : "B"}
+            savedSummary={saved && Object.hasOwn(saved.summaries, bill.bill_no) ? saved.summaries[bill.bill_no] : undefined}
+            savedHappen={saved?.happens[bill.bill_no]}
+            onSummary={saved ? addSummary : undefined}
+            onHappen={saved ? addHappen : undefined}
+          />
         ))}
       </div>
-      {/* 법률 자문 고지는 모든 화면 아래 푸터에 있습니다 (README 5장). */}
-      <ComparisonResult key={JSON.stringify([a, b, version])} a={a} b={b} onRetry={() => setVersion((value) => value + 1)} />
+      <ComparisonResult
+        key={JSON.stringify([a, b, version])}
+        a={a}
+        b={b}
+        initialRows={saved?.rows}
+        onResult={handleResult}
+        onRetry={() => setVersion((value) => value + 1)}
+      />
     </section>
   );
 }
 
-function ComparisonCard({ bill, letter }) {
-  const [cardRef, { status, info }] = useBillInfo(bill.bill_no);
+function ComparisonCard({ bill, letter, savedSummary, savedHappen, onSummary, onHappen }) {
+  const billNo = bill.bill_no;
+  const [cardRef, { status, info }] = useBillInfo(billNo);
   const link = info?.link || bill.link || null;
+  // 비교 화면에서는 맞춤 요약을 요청하지 않고, 저장했거나 검색 화면에서 이미 받은 결과만 보여줍니다.
+  const happen = savedHappen || getLastHappen(billNo);
+  const handleSummary = useCallback((summary) => onSummary?.(billNo, summary), [onSummary, billNo]);
+
+  useEffect(() => {
+    if (!savedHappen && happen) onHappen?.(billNo, happen);
+  }, [savedHappen, happen, onHappen, billNo]);
+
   return (
     <article className="comparison-card" ref={cardRef}>
       <div className="card-topline">
-        <span className="comparison-letter">법안 {letter}</span>
+        <span className={`comparison-letter is-${letter.toLowerCase()}`}>법안 {letter}</span>
         <StatusBadge status={bill.status} />
       </div>
       <h2>{bill.bill_name}</h2>
       <BillMeta bill={bill} info={info} showNumber />
-      <BillSummary bill={bill} />
+      <BillSummary bill={bill} initialSummary={savedSummary} onSummary={onSummary ? handleSummary : undefined} />
+      {happen && (
+        <details className="bill-original compare-personal">
+          <summary>AI 맞춤 요약 보기</summary>
+          <SavedPersonalResult entry={happen} renderStage={renderStage} />
+        </details>
+      )}
       {link ? (
         <a className="text-link" href={link} target="_blank" rel="noopener noreferrer">
           원문 보기<Icon name="external" size={15} /><span className="sr-only"> (새 탭)</span>
@@ -91,9 +194,15 @@ function DifferenceSide({ side, text }) {
   );
 }
 
-function ComparisonResult({ a, b, onRetry }) {
-  const [state, setState] = useState({ status: "loading" });
+// initialRows: 저장한 비교의 결과. 있으면 서버에 요청하지 않습니다.
+// 처음 그릴 때만 읽습니다(저장을 취소해도 다시 요청하지 않도록). 새로 요청하려면 key를 바꿉니다.
+function ComparisonResult({ a, b, initialRows, onResult, onRetry }) {
+  const [start] = useState(() => ({ rows: initialRows }));
+  const [state, setState] = useState(() =>
+    start.rows ? { status: "done", result: { rows: start.rows } } : { status: "loading" });
+
   useEffect(() => {
+    if (start.rows) return undefined;
     let active = true;
     compareBills(a, b).then((result) => {
       if (active) setState({ status: "done", result });
@@ -101,7 +210,11 @@ function ComparisonResult({ a, b, onRetry }) {
       if (active) setState({ status: "error", message: error.message });
     });
     return () => { active = false; };
-  }, [a, b]);
+  }, [a, b, start]);
+
+  useEffect(() => {
+    if (state.status === "done") onResult?.(state.result);
+  }, [state, onResult]);
 
   return (
     <section className="comparison-section" aria-labelledby="differences-heading">

@@ -95,9 +95,11 @@ function HappenResult({ result, groups, renderStage, headlineRef, onChange }) {
             ))}
           </ul>
         )}
-        <button type="button" className="personal-change" onClick={onChange}>
-          조건 변경
-        </button>
+        {onChange && (
+          <button type="button" className="personal-change" onClick={onChange}>
+            조건 변경
+          </button>
+        )}
       </div>
       <p className="personal-headline" ref={headlineRef} tabIndex={-1}>
         {result.headline}
@@ -156,6 +158,18 @@ function HappenResult({ result, groups, renderStage, headlineRef, onChange }) {
       {/* 맞춤 요약은 두 고지를 한 줄로 줄인 문구를 씁니다 (README 5장 필수 고지 문구 예외). */}
       <small>AI 요약은 원문과 다를 수 있으며, 법률 자문이 아닙니다. 정확한 내용은 원문을 확인하세요.</small>
     </div>
+  );
+}
+
+// 이미 받은 맞춤 요약을 읽기 전용으로 보여줍니다 (비교 화면·저장한 비교).
+// 비교 화면에서는 맞춤 요약을 새로 요청하지 않으므로 '조건 변경' 버튼이 없습니다.
+export function SavedPersonalResult({ entry, renderStage }) {
+  return (
+    <HappenResult
+      result={entry.result}
+      groups={selectedGroups(entry.selection)}
+      renderStage={renderStage}
+    />
   );
 }
 

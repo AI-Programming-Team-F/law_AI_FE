@@ -87,12 +87,19 @@ export function BillLinkNotice({ status, link }) {
 
 // AI 요약: 처음에는 버튼만 두고, 누른 법안만 서버에 요약을 요청합니다 (README 2-2, 8-2).
 // personal이면 요약 아래에 "이 법안이 적용되면?"을 이어서 보여줍니다 (검색·저장 카드만).
-export function BillSummary({ bill, personal = false }) {
+// initialSummary: 저장한 비교에 보관된 요약(문자열 또는 null). 있으면 요청 없이 그대로 보여줍니다.
+// onSummary: 요약이 나오면 알려 줍니다 (저장한 비교에 더하기).
+export function BillSummary({ bill, personal = false, initialSummary, onSummary }) {
   const billNo = bill.bill_no;
   const [state, setState] = useState(() => {
+    if (initialSummary !== undefined) return { status: "done", summary: initialSummary };
     const cached = getCachedSummary(billNo);
     return cached ? { status: "done", summary: cached.summary } : { status: "idle" };
   });
+
+  useEffect(() => {
+    if (state.status === "done") onSummary?.(state.summary);
+  }, [state.status, state.summary, onSummary]);
   const textRef = useRef(null);
   const retryRef = useRef(null);
   const requested = useRef(false);
