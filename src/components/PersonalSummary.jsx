@@ -5,25 +5,31 @@ import {
   getCachedProfile,
   getLastHappen,
 } from "../api/bills";
-
-const APPLICABILITY = {
-  high: { label: "해당될 가능성 높음", className: "is-high" },
-  medium: { label: "확인 필요", className: "is-medium" },
-  low: { label: "해당될 가능성 낮음", className: "is-low" },
-};
+import Icon from "./Icon";
 
 const CHECK = {
-  match: { mark: "✓", label: "맞음" },
-  mismatch: { mark: "✕", label: "맞지 않음" },
+  match: { mark: "✓", label: "해당" },
+  mismatch: { mark: "✕", label: "해당 안 됨" },
   unknown: { mark: "?", label: "확인 필요" },
 };
 
 // 통과 전이거나 폐기된 법안을 확정된 혜택으로 오해하지 않도록 처리 단계별로 안내합니다.
+// 결과 맨 아래(고지 문구 위)에 놓입니다. 원문 링크는 카드 제목에 있어 따로 두지 않습니다.
 function stageNote({ status, stage }) {
   if (status === "REVIEW") return "아직 심사 중이라 바로 적용되지 않아요.";
   if (status === "PASSED") return "본회의를 통과했어요. 통과 과정에서 내용이 달라졌을 수 있으니 확정된 법률을 확인하세요.";
-  if (status === "MERGED") return "이 법안 자체는 폐기되고 내용이 대안에 반영됐어요. 위 설명대로 적용되지 않을 수 있어요.";
-  return `처리 결과는 '${stage}'예요. 이 법안이 그대로 적용되지 않을 수 있어요.`;
+  if (status === "MERGED") return "이 법안은 다른 대안에 통합되어 폐기된 상태예요. 위 내용대로 적용되지 않을 수 있어요.";
+  return `처리 결과는 '${stage}'예요. 위 내용대로 적용되지 않을 수 있어요.`;
+}
+
+function StageNote({ result, renderStage }) {
+  return (
+    <div className="personal-stage">
+      <span>지금 단계</span>
+      {renderStage(result.status)}
+      <p>{stageNote(result)} <span className="personal-stage-source">(국회 처리 정보)</span></p>
+    </div>
+  );
 }
 
 function toggleOption(list, option, multiple) {
@@ -40,6 +46,14 @@ function emptySelection(profile) {
 
 function selectedLabels(selection) {
   return [...selection.targets, ...selection.criteria.flatMap((item) => item.selected)];
+}
+
+// 고른 조건을 유형(대상, 각 기준)별로 묶습니다. 고른 값이 없는 유형은 뺍니다.
+function selectedGroups(selection) {
+  return [
+    { name: "이 법안에 나온 대상", values: selection.targets },
+    ...selection.criteria.map((item) => ({ name: item.name, values: item.selected })),
+  ].filter((group) => group.values.length > 0);
 }
 
 function Chips({ label, hint, options, selected, disabled, onToggle }) {
@@ -66,21 +80,25 @@ function Chips({ label, hint, options, selected, disabled, onToggle }) {
   );
 }
 
-function HappenResult({ result, labels, renderStage, headlineRef, onChange }) {
-  const applicability = APPLICABILITY[result.applicability];
+function HappenResult({ result, groups, renderStage, headlineRef, onChange }) {
   return (
     <div className="personal-result">
       <div className="personal-result-head">
-        <span className="summary-label">
-          AI 맞춤 요약{labels.length > 0 && ` · ${labels.join(" · ")}`}
-        </span>
+        <span className="summary-label">AI 맞춤 요약</span>
+        {groups.length > 0 && (
+          <ul className="personal-tags" aria-label="고른 조건">
+            {groups.map((group) => (
+              <li key={group.name} title={group.name}>
+                <span className="sr-only">{group.name}: </span>
+                {group.values.join(" · ")}
+              </li>
+            ))}
+          </ul>
+        )}
         <button type="button" className="personal-change" onClick={onChange}>
-          조건 바꾸기
+          조건 변경
         </button>
       </div>
-      <span className={`personal-applicability ${applicability.className}`}>
-        {applicability.label}
-      </span>
       <p className="personal-headline" ref={headlineRef} tabIndex={-1}>
         {result.headline}
       </p>
@@ -112,32 +130,31 @@ function HappenResult({ result, labels, renderStage, headlineRef, onChange }) {
           {result.checks.map((check, index) => (
             <li key={index} className={`is-${check.status}`}>
               <span className="personal-check-mark" aria-hidden="true">{CHECK[check.status].mark}</span>
-              <span>
+              <span className="personal-check-text">
                 <strong>{check.condition}</strong>
-                <em>{CHECK[check.status].label}</em>
                 {check.reason}
               </span>
+              <span className="personal-check-tag">{CHECK[check.status].label}</span>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="personal-evidence">
-        <strong>근거가 된 원문</strong>
-        {result.evidence.length ? (
-          result.evidence.map((quote, index) => <blockquote key={index}>{quote}</blockquote>)
-        ) : (
-          <p>근거 문장을 찾지 못했어요. 제안이유 및 주요내용을 직접 확인하세요.</p>
-        )}
-      </div>
+      {/* 카드의 '제안이유 및 주요내용'과 같은 접기 방식입니다. */}
+      <details className="bill-original personal-evidence">
+        <summary>근거가 된 원문</summary>
+        <div className="personal-evidence-box">
+          {result.evidence.length ? (
+            result.evidence.map((quote, index) => <blockquote key={index}>{quote}</blockquote>)
+          ) : (
+            <p>근거 문장을 찾지 못했어요. 제안이유 및 주요내용을 직접 확인하세요.</p>
+          )}
+        </div>
+      </details>
 
-      <div className="personal-stage">
-        <span>지금 단계</span>
-        {renderStage(result.status)}
-        <p>{stageNote(result)} (국회 처리 정보)</p>
-      </div>
-      <small>AI가 생성한 요약이며 원문과 다를 수 있습니다.</small>
-      <small>법률 자문이 아닌 정보 안내입니다. 정확한 내용은 원문을 확인하세요.</small>
+      <StageNote result={result} renderStage={renderStage} />
+      {/* 맞춤 요약은 두 고지를 한 줄로 줄인 문구를 씁니다 (README 5장 필수 고지 문구 예외). */}
+      <small>AI 요약은 원문과 다를 수 있으며, 법률 자문이 아닙니다. 정확한 내용은 원문을 확인하세요.</small>
     </div>
   );
 }
@@ -156,15 +173,23 @@ export default function PersonalSummary({ bill, renderStage }) {
   const panelRef = useRef(null);
   const headlineRef = useRef(null);
   const retryRef = useRef(null);
+  const startRef = useRef(null);
   const moveFocus = useRef(false);
 
   // 버튼이 사라지는 단계에서는 새로 나타난 내용으로 키보드 포커스를 옮깁니다.
   useEffect(() => {
     if (!moveFocus.current || state.view.endsWith("loading")) return;
     moveFocus.current = false;
-    const target = { picking: panelRef, result: headlineRef }[state.view] || retryRef;
+    const target = { picking: panelRef, result: headlineRef, idle: startRef }[state.view] || retryRef;
     target.current?.focus();
   }, [state.view]);
+
+  // 닫기: 조건 변경으로 열었으면 변경 전 결과로, 처음 열었으면 시작 버튼으로 돌아갑니다.
+  function closePanel() {
+    moveFocus.current = true;
+    const { profile, previous } = state;
+    setState(previous ? { view: "result", profile, ...previous } : { view: "idle" });
+  }
 
   async function openPanel() {
     moveFocus.current = true;
@@ -178,14 +203,14 @@ export default function PersonalSummary({ bill, renderStage }) {
   }
 
   async function submit() {
-    const { profile, selection } = state;
+    const { profile, selection, previous } = state;
     moveFocus.current = true;
-    setState({ view: "happen-loading", profile, selection });
+    setState({ view: "happen-loading", profile, selection, previous });
     try {
       const result = await getBillHappen(billNo, selection);
       setState({ view: "result", profile, selection, result });
     } catch (error) {
-      setState({ view: "happen-error", profile, selection, message: error.message });
+      setState({ view: "happen-error", profile, selection, previous, message: error.message });
     }
   }
 
@@ -203,6 +228,7 @@ export default function PersonalSummary({ bill, renderStage }) {
     return (
       <div className="personal-start">
         <button
+          ref={startRef}
           type="button"
           className="summary-button"
           onClick={openPanel}
@@ -242,12 +268,13 @@ export default function PersonalSummary({ bill, renderStage }) {
     return (
       <HappenResult
         result={state.result}
-        labels={labels}
+        groups={selectedGroups(selection)}
         renderStage={renderStage}
         headlineRef={headlineRef}
         onChange={() => {
           moveFocus.current = true;
-          setState({ view: "picking", profile, selection });
+          // 닫기를 누르면 되돌아갈 수 있게 지금 결과와 조건을 보관합니다.
+          setState({ view: "picking", profile, selection, previous: { selection, result: state.result } });
         }}
       />
     );
@@ -258,9 +285,20 @@ export default function PersonalSummary({ bill, renderStage }) {
 
   return (
     <div className="personal-panel">
-      <h4 ref={panelRef} tabIndex={-1}>
-        어떤 분 기준으로 볼까요? <span>해당하는 것만 골라도 돼요</span>
-      </h4>
+      <div className="personal-panel-head">
+        <h4 ref={panelRef} tabIndex={-1}>
+          어떤 분 기준으로 볼까요? <span>해당하는 것만 골라도 돼요</span>
+        </h4>
+        <button
+          type="button"
+          className="personal-close"
+          onClick={closePanel}
+          disabled={loading}
+          aria-label={state.previous ? "조건 변경 닫기" : "조건 고르기 닫기"}
+        >
+          <Icon name="close" size={18} />
+        </button>
+      </div>
       {profile.targets.length > 0 && (
         <Chips
           label="이 법안에 나온 대상"

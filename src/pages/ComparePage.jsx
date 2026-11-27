@@ -49,8 +49,8 @@ export default function ComparePage({ knownBills = [] }) {
           <ComparisonCard key={bill.bill_no} bill={bill} letter={index === 0 ? "A" : "B"} />
         ))}
       </div>
+      {/* 법률 자문 고지는 모든 화면 아래 푸터에 있습니다 (README 5장). */}
       <ComparisonResult key={JSON.stringify([a, b, version])} a={a} b={b} onRetry={() => setVersion((value) => value + 1)} />
-      <p className="compare-intro">법률 자문이 아닌 정보 안내입니다. 정확한 내용은 원문을 확인하세요.</p>
     </section>
   );
 }
