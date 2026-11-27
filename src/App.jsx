@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -14,6 +14,7 @@ import SavedPage from "./pages/SavedPage";
 import CompareTray from "./components/CompareTray";
 import Icon from "./components/Icon";
 import Logo from "./components/Logo";
+import { SAVED_COMPARES_KEY, isSameCompare, loadSavedCompares, upsertCompare } from "./utils/savedCompares";
 import "./App.css";
 
 const SAVED_KEY = "beopan-itda:saved-bills:v2";
@@ -36,6 +37,7 @@ function AppLayout() {
   const [homeKey, setHomeKey] = useState(0);
   const [selectedBills, setSelectedBills] = useState([]);
   const [savedBills, setSavedBills] = useState(loadSavedBills);
+  const [savedCompares, setSavedCompares] = useState(() => loadSavedCompares());
 
   useEffect(() => {
     try {
@@ -44,6 +46,30 @@ function AppLayout() {
       // 저장 공간을 쓸 수 없는 환경(시크릿 모드 등)에서는 화면 상태로만 유지합니다.
     }
   }, [savedBills]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SAVED_COMPARES_KEY, JSON.stringify(savedCompares));
+    } catch {
+      // 위와 같이 화면 상태로만 유지합니다.
+    }
+  }, [savedCompares]);
+
+  // 저장한 비교: 저장·삭제, 그리고 저장 뒤에 받은 AI 요약·맞춤 요약·새 비교 결과를 더합니다.
+  const compareActions = useMemo(() => ({
+    save: (entry) => setSavedCompares((previous) => upsertCompare(previous, entry)),
+    remove: (a, b) => setSavedCompares((previous) => previous.filter((item) => !isSameCompare(item, a, b))),
+    update: (a, b, change) => setSavedCompares((previous) => {
+      let changed = false;
+      const next = previous.map((item) => {
+        if (!isSameCompare(item, a, b)) return item;
+        const updated = change(item);
+        changed = updated !== item;
+        return updated;
+      });
+      return changed ? next : previous;
+    }),
+  }), []);
 
   // 로고를 누르면 검색어를 비우고 첫 화면(기능 소개)으로 돌아갑니다.
   function goHome() {
@@ -88,6 +114,8 @@ function AppLayout() {
   );
 
   const showTray = location.pathname !== "/compare" && selectedBills.length > 0;
+  // 사이드바 '저장한 법안' 숫자: 저장한 법안 + 저장한 비교
+  const savedCount = savedBills.length + savedCompares.length;
 
   return (
     <div className="app-shell">
@@ -112,9 +140,9 @@ function AppLayout() {
           <NavLink to="/saved">
             <Icon name="bookmark" size={20} />
             저장한 법안
-            {savedBills.length > 0 && (
-              <span className="nav-count" aria-label={`${savedBills.length}건`}>
-                {savedBills.length}
+            {savedCount > 0 && (
+              <span className="nav-count" aria-label={`법안 ${savedBills.length}건, 비교 ${savedCompares.length}건`}>
+                {savedCount}
               </span>
             )}
           </NavLink>
@@ -141,10 +169,21 @@ function AppLayout() {
                   onToggleSave={toggleSave}
                   selectedBills={selectedBills}
                   onToggleCompare={toggleCompare}
+                  savedCompares={savedCompares}
+                  onRemoveCompare={compareActions.remove}
                 />
               }
             />
-            <Route path="/compare" element={<ComparePage knownBills={[...selectedBills, ...savedBills]} />} />
+            <Route
+              path="/compare"
+              element={
+                <ComparePage
+                  knownBills={[...selectedBills, ...savedBills]}
+                  savedCompares={savedCompares}
+                  compareActions={compareActions}
+                />
+              }
+            />
             <Route
               path="*"
               element={

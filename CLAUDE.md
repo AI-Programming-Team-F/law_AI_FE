@@ -18,7 +18,8 @@ npm run build    # 배포 빌드 — 작업 후 반드시 실행
 - 서버 호출은 `src/api/client.js`, 필드 변환·요약/비교 캐시는 `src/api/bills.js`에 있다. 실행 화면에서 `mock.js`를 import하지 않는다. mock은 실제 응답 형태의 테스트 fixture다.
 - 검색은 `/search?query=...`, 의안번호 조회는 `/search/billno?billno=...`, 요약은 `/summary?bill_no=...`, 비교는 GET `/compare?a_bill_no=...&b_bill_no=...`, 맞춤 요약은 `/profile?bill_no=...`와 POST `/happen`, 상세 정보는 `/info?billno=...`다. 데이터 수집은 BE가 시작할 때 자동으로 한다.
 - 원문 링크·발의자·발의일은 [src/hooks/useBillInfo.js](src/hooks/useBillInfo.js)로 **화면에 보이는 카드만** `/info`에서 받는다(동시 3건, 성공 결과 재사용).
-- 맞춤 요약은 [src/components/PersonalSummary.jsx](src/components/PersonalSummary.jsx)다. 검색·저장 카드에서 AI 요약이 나온 뒤에만 `이 법안이 적용되면?` → 조건 선택 → `맞춤 요약 보기` 순서로 요청한다. 비교 화면에는 넣지 않는다.
+- 맞춤 요약은 [src/components/PersonalSummary.jsx](src/components/PersonalSummary.jsx)다. 검색·저장 카드에서 AI 요약이 나온 뒤에만 `이 법안이 적용되면?` → 조건 선택 → `맞춤 요약 보기` 순서로 요청한다. 비교 화면에서는 새로 요청하지 않고, 이미 받았거나 저장된 결과만 카드 안에 접어 읽기 전용(`SavedPersonalResult`)으로 보여준다.
+- 비교 저장은 [src/utils/savedCompares.js](src/utils/savedCompares.js)(키 `beopan-itda:saved-compares:v1`)다. 비교 결과·받아 둔 AI 요약·맞춤 요약을 함께 저장하고, 다시 열면 저장본으로 그려 AI를 다시 요청하지 않는다. 목록은 `저장한 법안` 화면 위쪽에 있다(README 2-5).
 - Vite 개발·preview 프록시는 `/api` 접두사를 제거해 Railway로 전달한다. Vercel 배포는 `vercel.json`의 rewrites가 같은 전달과 화면 주소(`/compare` 등)의 `index.html` 연결을 맡는다. 다른 호스팅은 별도 프록시 또는 `VITE_API_BASE_URL` + BE CORS가 필요하다(README 7장).
 - 요약은 검색·저장·비교 화면 모두 버튼을 누른 법안만 요청한다. 비교 API는 개별 요약을 함께 주지 않는다.
 - 비교 응답은 `differences: [[소제목, A, B], ...]`다. 번호·소제목 아래에 A VS B로 표시하고, 소제목이 비면 `비교 항목`으로 둔다. FE에서 소제목을 지어내지 않는다. 공통점·유사도·종합 비교 요약은 API 미제공으로 표시하지 않는다.
