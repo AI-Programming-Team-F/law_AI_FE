@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getBillSummary, getCachedSummary, STATUS_LABELS } from "../api/bills";
 import { useBillInfo } from "../hooks/useBillInfo";
+import { originalParagraphs } from "../utils/original";
 import Icon from "./Icon";
 import PersonalSummary from "./PersonalSummary";
 
@@ -188,7 +189,8 @@ export default function BillCard({
 }) {
   // 검색어를 띄어쓰기로 나눈 단어로 제목과 원문의 일치 부분을 표시합니다.
   const terms = highlightTerms.filter(Boolean);
-  const matchCount = countMatches(bill.proposal_text, terms);
+  const paragraphs = originalParagraphs(bill.proposal_text);
+  const matchCount = countMatches(paragraphs.map((line) => line.text).join("\n"), terms);
   const [cardRef, { status: infoStatus, info }] = useBillInfo(bill.bill_no);
   const link = info?.link || bill.link || null;
   const highlightedTitle = (
@@ -226,15 +228,19 @@ export default function BillCard({
       </h3>
       <BillMeta bill={bill} info={info} />
       <BillLinkNotice status={infoStatus} link={link} />
-      {bill.proposal_text && (
+      {paragraphs.length > 0 && (
         <details className="bill-original">
           <summary>
             제안이유 및 주요내용
             {matchCount > 0 && <span className="match-count">검색어 {matchCount}곳</span>}
           </summary>
-          <p>
-            <Highlight text={bill.proposal_text} keywords={terms} />
-          </p>
+          <div className="bill-original-body">
+            {paragraphs.map((line, index) => (
+              <p key={index} className={line.gapBefore ? "has-gap" : undefined}>
+                <Highlight text={line.text} keywords={terms} />
+              </p>
+            ))}
+          </div>
         </details>
       )}
       {showSimilarity && Number.isFinite(bill.score) && (

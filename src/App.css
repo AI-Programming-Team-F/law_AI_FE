@@ -1318,7 +1318,20 @@
 /* 실제 API의 원문·요청 상태와 주제별 비교 행 */
 .bill-original { margin-top: 16px; font-size: 15px; line-height: 1.75; }
 .bill-original summary { cursor: pointer; color: var(--navy); }
-.bill-original p { white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 12px; }
+/* 펼친 국회 원문은 회색 상자: AI 요약(흰 바탕)과 구분되도록 근거 원문 상자와 같은 모양 */
+.bill-original-body {
+  margin-top: 10px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+.bill-original-body p {
+  overflow-wrap: anywhere;
+}
+/* 원문의 빈 줄 자리: 한 줄만큼 띄웁니다 (예: 제목과 본문 사이) */
+.bill-original-body p.has-gap {
+  margin-top: 1.75em; /* .bill-original의 줄 높이와 같음 */
+}
 .bill-original mark {
   background: var(--highlight-soft);
   border-radius: 2px;
@@ -1547,18 +1560,44 @@
   gap: 8px 14px;
   margin-top: 14px;
 }
+/* 카드 안에 상자를 겹치지 않고, AI 요약(.summary-box)처럼 위쪽 가로 구분선 하나로만 나눕니다. */
 .personal-panel,
 .personal-result {
-  margin-top: 16px;
-  padding: 18px 20px;
-  border: 1px solid var(--tint-line);
-  border-radius: 8px;
-  background: #fafbff;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.personal-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 .personal-panel h4 {
   margin: 0;
+  padding-top: 6px;
   font-size: 16px;
   outline: none;
+}
+.personal-close {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: -2px -6px 0 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-muted);
+}
+.personal-close:hover:not(:disabled) {
+  border-color: var(--control-line);
+  color: var(--ink);
+}
+.personal-close:disabled {
+  cursor: progress;
+  opacity: 0.5;
 }
 .personal-panel h4 span {
   margin-left: 6px;
@@ -1651,17 +1690,43 @@
   border-color: #ffffff66;
   border-top-color: #fff;
 }
+/* 제목은 왼쪽에 고정하고, 고른 조건 태그는 그 오른쪽에서 줄바꿈됩니다. */
 .personal-result-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 12px;
 }
 .personal-result-head .summary-label {
-  min-width: 0;
+  grid-column: 1;
   margin: 0;
   padding-top: 5px;
   line-height: 1.5;
+  white-space: nowrap;
+}
+.personal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.personal-tags li {
+  max-width: 100%;
+  padding: 4px 11px;
+  border: 1px solid var(--tint-line);
+  border-radius: 999px;
+  background: var(--tint);
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.personal-change {
+  grid-column: 3;
 }
 .personal-change {
   flex-shrink: 0;
@@ -1678,32 +1743,8 @@
   border-color: var(--navy);
   color: var(--navy);
 }
-.personal-applicability {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 2px 9px;
-  border: 1px solid;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-}
-.personal-applicability.is-high {
-  border-color: #b3d8c3;
-  background: #eef8f2;
-  color: #17643f;
-}
-.personal-applicability.is-medium {
-  border-color: #e6cfa8;
-  background: #fdf6ea;
-  color: #87480a;
-}
-.personal-applicability.is-low {
-  border-color: #d0d5dd;
-  background: #f4f5f7;
-  color: #4b5565;
-}
 .summary-box .personal-headline {
-  margin-top: 8px;
+  margin-top: 12px;
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 600;
@@ -1714,8 +1755,11 @@
 .personal-changes {
   width: 100%;
   margin-top: 14px;
-  border: 1px solid var(--tint-line);
-  border-collapse: collapse;
+  overflow: hidden; /* 머리줄 배경이 둥근 모서리를 넘지 않게 */
+  border: 1px solid var(--line);
+  border-radius: 10px; /* 비교 화면 항목 상자와 같은 둥글기 */
+  border-collapse: separate; /* collapse에서는 border-radius가 적용되지 않음 */
+  border-spacing: 0;
   background: var(--sheet);
   font-size: 15px;
 }
@@ -1726,6 +1770,12 @@
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
+}
+.personal-changes thead th:first-child {
+  border-top-left-radius: 9px;
+}
+.personal-changes thead th:last-child {
+  border-top-right-radius: 9px;
 }
 .personal-changes thead th {
   border-top: 0;
@@ -1742,67 +1792,66 @@
   font-weight: 700;
 }
 .personal-checks {
-  display: grid;
-  gap: 8px;
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
   font-size: 15px;
   line-height: 1.6;
 }
+/* 판정마다 아래 구분줄을 두어 한 줄씩 읽히게 합니다. */
 .personal-checks li {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  gap: 6px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+/* 판정은 배경 없이 글자색으로만 구분합니다. */
+.personal-check-tag {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.85;
+  white-space: nowrap;
+}
+.personal-checks .is-match :is(.personal-check-mark, .personal-check-tag) {
+  color: #17643f;
+}
+.personal-checks .is-mismatch :is(.personal-check-mark, .personal-check-tag) {
+  color: #b3261e;
+}
+.personal-checks .is-unknown :is(.personal-check-mark, .personal-check-tag) {
+  color: #87480a;
 }
 .personal-check-mark {
   font-weight: 800;
-}
-.personal-checks .is-match .personal-check-mark {
-  color: #17643f;
-}
-.personal-checks .is-mismatch .personal-check-mark {
-  color: #b3261e;
-}
-.personal-checks .is-unknown .personal-check-mark {
-  color: #87480a;
 }
 .personal-checks strong {
   margin-right: 6px;
   font-weight: 600;
 }
-.personal-checks em {
-  margin-right: 6px;
-  color: var(--ink-muted);
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 600;
-}
-.personal-evidence {
+/* 근거 원문: 카드의 '제안이유 및 주요내용'(.bill-original)과 같은 접기에, 펼친 내용은 회색 상자 */
+.bill-original.personal-evidence {
   margin-top: 14px;
-  padding: 12px 14px;
+}
+.personal-evidence-box {
+  margin-top: 10px;
+  padding: 12px 16px;
   border-radius: 8px;
   background: var(--panel);
-  color: var(--ink-muted);
-  font-size: 14px;
-}
-.personal-evidence strong {
-  display: block;
-  margin-bottom: 4px;
   color: var(--ink);
-  font-size: 13px;
 }
 .personal-evidence blockquote {
   margin: 0;
-  line-height: 1.7;
   overflow-wrap: anywhere;
 }
 .personal-evidence blockquote + blockquote {
-  margin-top: 6px;
+  margin-top: 8px;
 }
-.summary-box .personal-evidence p {
-  font-size: 14px;
+.summary-box .personal-evidence-box p {
+  font-size: 15px;
 }
+/* 지금 단계: 결과 맨 아래 한 줄 (국회 처리 정보, AI 아님) */
 .personal-stage {
   display: flex;
   align-items: center;
@@ -1816,23 +1865,34 @@
   color: var(--ink);
   font-weight: 700;
 }
+.personal-stage .status-badge {
+  flex-shrink: 0;
+}
 .summary-box .personal-stage p {
   flex: 1 1 240px;
   min-width: 0;
   font-size: 14px;
   line-height: 1.6;
 }
-.personal-result small + small {
-  margin-top: 2px;
+.personal-stage-source {
+  white-space: nowrap;
 }
 @media (max-width: 760px) {
-  .personal-panel,
-  .personal-result {
-    padding: 14px;
-  }
   .personal-panel h4 span {
     display: block;
     margin: 2px 0 0;
+  }
+  /* 좁은 화면에서는 태그를 제목·버튼 아래 한 줄로 내립니다. */
+  .personal-result-head {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .personal-change {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .personal-tags {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
   .personal-submit {
     align-items: stretch;
@@ -1859,7 +1919,7 @@
     display: block;
   }
   .personal-changes tbody tr + tr {
-    border-top: 1px solid var(--tint-line);
+    border-top: 1px solid var(--line);
   }
   .personal-changes tbody th {
     padding: 10px 12px 2px;
@@ -1921,7 +1981,7 @@
   gap: 10px;
   padding: 10px 16px;
   border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  background: var(--tint); /* 맞춤 요약 표 머리줄과 같은 색 */
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;

@@ -4,6 +4,7 @@ import { ApiError, request } from "../src/api/client.js";
 import { searchBills, normalizeStatus, getBillSummary, compareBills, getBillByNo, getBillProfile, getBillHappen, getLastHappen, getBillInfo, getCachedBillInfo } from "../src/api/bills.js";
 import { MOCK_SEARCH_RESULTS, MOCK_COMPARE_RESULT, MOCK_PROFILE, MOCK_HAPPEN, MOCK_INFO } from "../src/api/mock.js";
 import { parseEmphasis } from "../src/utils/emphasis.js";
+import { originalParagraphs } from "../src/utils/original.js";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -317,4 +318,19 @@ test("상세 정보: 동시에 최대 3건만 요청", async () => {
   };
   await Promise.all(Array.from({ length: 8 }, (_, index) => getBillInfo(`93000${index}`)));
   assert.equal(peak, 3);
+});
+
+test("원문 줄 정리: 들여쓰기만 지우고 제목·글자·빈 줄 위치는 유지", () => {
+  const text = "제안이유 및 주요내용\n\n  첫째 문단임.\n  둘째 문단임(안 제1조).\n";
+  assert.deepEqual(originalParagraphs(text), [
+    { text: "제안이유 및 주요내용", gapBefore: false },
+    { text: "첫째 문단임.", gapBefore: true },
+    { text: "둘째 문단임(안 제1조).", gapBefore: false },
+  ]);
+  // 맨 앞 빈 줄은 간격으로 남기지 않고, 연속된 빈 줄은 하나로 줄입니다.
+  assert.deepEqual(originalParagraphs("\n  현행법은 …임.\r\n\r\n\r\n  이에 …것임."), [
+    { text: "현행법은 …임.", gapBefore: false },
+    { text: "이에 …것임.", gapBefore: true },
+  ]);
+  assert.deepEqual(originalParagraphs(null), []);
 });
