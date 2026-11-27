@@ -13,8 +13,27 @@ const lastHappens = new Map(); // 의안번호 → 마지막으로 본 맞춤 �
 const infos = new Map();
 const pendingInfos = new Map();
 const infoQueue = [];
+// 저장한 법안의 AI 결과를 보관하려고, 새 결과를 받으면 알려 줍니다 (App이 구독).
+const resultListeners = new Set();
 const MAX_INFO_REQUESTS = 3; // /info는 호출마다 국회 API를 다시 부르므로 동시 요청을 제한합니다.
 let activeInfoRequests = 0;
+
+// type: "summary" | "profile" | "happen"
+export function subscribeResults(listener) {
+  resultListeners.add(listener);
+  return () => resultListeners.delete(listener);
+}
+
+function notifyResult(type, billNo, value) {
+  resultListeners.forEach((listener) => listener(type, billNo, value));
+}
+
+// 저장해 둔 결과를 캐시에 채웁니다(앱을 열 때). 이미 받은 결과가 있으면 그대로 둡니다.
+export function restoreSavedResult(billNo, { summary, profile, happen } = {}) {
+  if (summary !== undefined && !summaries.has(billNo)) summaries.set(billNo, { bill_no: billNo, summary });
+  if (profile && !profiles.has(billNo)) profiles.set(billNo, profile);
+  if (happen && !lastHappens.has(billNo)) lastHappens.set(billNo, happen);
+}
 
 function invalidResponse() {
   return new ApiError("서버 응답 형식이 명세와 달라요. 잠시 후 다시 시도해 주세요.", { code: "INVALID_RESPONSE" });
@@ -123,6 +142,7 @@ export function getBillSummary(billNo) {
   return cachedRequest(summaries, pendingSummaries, billNo, async () => {
     const result = await request("/summary", { bill_no: billNo });
     if (result.bill_no !== billNo || !(result.summary === null || typeof result.summary === "string")) throw invalidResponse();
+    notifyResult("summary", billNo, result.summary);
     return result;
   });
 }
@@ -156,6 +176,7 @@ export function getBillProfile(billNo) {
     const validCriteria = Array.isArray(result.criteria) && result.criteria.every((item) =>
       isText(item?.name) && typeof item.multiple === "boolean" && isTextList(item.options));
     if (result.bill_no !== billNo || !isTextList(result.targets) || !validCriteria) throw invalidResponse();
+    notifyResult("profile", billNo, result);
     return result;
   });
 }
@@ -195,6 +216,7 @@ export async function getBillHappen(billNo, selection) {
     return { ...response, status: response.stage === "심사 중" ? "REVIEW" : normalizeStatus(response.stage) };
   });
   lastHappens.set(billNo, { selection, result });
+  notifyResult("happen", billNo, { selection, result });
   return result;
 }
 

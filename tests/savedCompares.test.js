@@ -35,6 +35,7 @@ const storage = (value) => ({ getItem: (key) => (key === SAVED_COMPARES_KEY ? va
 test("저장한 비교 형식: 비교 결과·요약(null 포함)·맞춤 요약을 함께 보관", () => {
   assert.equal(isSavedCompare(entry()), true);
   assert.equal(isSavedCompare(entry({ summaries: {}, happens: {} })), true, "요약·맞춤 요약을 받지 않았으면 비어 있어도 됨");
+  assert.equal(isSavedCompare(entry({ happens: undefined })), true, "새로 저장하는 비교에는 맞춤 요약이 없음");
   assert.equal(isSavedCompare(entry({ b: "0000001" })), false, "같은 법안끼리는 비교가 아님");
   assert.equal(isSavedCompare(entry({ rows: [["주제", "A", "B"]] })), false, "화면용 rows 형식만 허용");
   assert.equal(isSavedCompare(entry({ summaries: { "9999999": "다른 법안" } })), false);

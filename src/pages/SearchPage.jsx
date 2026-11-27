@@ -11,7 +11,7 @@ const EXAMPLE_QUERIES = [
   "월세 지원금",
   "전세사기",
   "청년 교통혜택",
-  "임차인 보호",
+  "스마트 안경",
 ];
 
 export default function SearchPage({
@@ -151,13 +151,6 @@ export default function SearchPage({
             </div>
           </article>
         </section>
-      )}
-
-      {!query && (
-        <dl className="hero-meta page-width">
-          <div><dt>데이터</dt><dd>22대 국회 발의법률안</dd></div>
-          <div><dt>안내</dt><dd>법률 자문이 아닌 정보 제공</dd></div>
-        </dl>
       )}
 
       {query && (

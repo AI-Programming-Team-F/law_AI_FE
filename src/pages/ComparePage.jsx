@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { compareBills, getBillByNo, getCachedBill, getCachedSummary, getLastHappen } from "../api/bills";
+import { compareBills, getBillByNo, getCachedBill, getCachedSummary } from "../api/bills";
 import { BillLinkNotice, BillMeta, BillSummary, StatusBadge } from "../components/BillCard";
-import { SavedPersonalResult } from "../components/PersonalSummary";
 import { useBillInfo } from "../hooks/useBillInfo";
 import RequestState from "../components/RequestState";
 import Icon from "../components/Icon";
 import { parseEmphasis } from "../utils/emphasis";
 import { isSameCompare } from "../utils/savedCompares";
-
-const renderStage = (status) => <StatusBadge status={status} />;
 
 // 저장할 법안 정보 (카드 제목·상태·소관위에 필요한 것만)
 function pickBill(bill) {
@@ -52,11 +49,9 @@ export default function ComparePage({ knownBills = [], savedCompares = [], compa
     setShown((previous) => (previous?.key === key && previous.result === result ? previous : { key, result }));
   }, [a, b, setShown]);
 
-  // 저장한 비교에 저장 뒤 받은 AI 요약·맞춤 요약을 더합니다 (이미 있으면 그대로 둡니다).
+  // 저장한 비교에 저장 뒤 받은 AI 요약을 더합니다 (이미 있으면 그대로 둡니다).
   const addSummary = useCallback((billNo, summary) => compareActions.update(a, b, (item) =>
     Object.hasOwn(item.summaries, billNo) ? item : { ...item, summaries: { ...item.summaries, [billNo]: summary } }), [compareActions, a, b]);
-  const addHappen = useCallback((billNo, happen) => compareActions.update(a, b, (item) =>
-    item.happens[billNo] ? item : { ...item, happens: { ...item.happens, [billNo]: { selection: happen.selection, result: happen.result } } }), [compareActions, a, b]);
 
   if (!a || !b || !/^\d+$/.test(a) || !/^\d+$/.test(b) || a === b) {
     return (
@@ -73,7 +68,7 @@ export default function ComparePage({ knownBills = [], savedCompares = [], compa
     bill_no: billNo, bill_name: `의안번호 ${billNo}`, status: "UNKNOWN", matched_keywords: [],
   });
 
-  // 지금 화면의 비교 결과와, 이미 받아 둔 AI 요약·맞춤 요약을 함께 저장합니다.
+  // 지금 화면의 비교 결과와, 이미 받아 둔 AI 요약을 함께 저장합니다.
   function toggleSaved() {
     if (saved) {
       compareActions.remove(a, b);
@@ -81,19 +76,15 @@ export default function ComparePage({ knownBills = [], savedCompares = [], compa
     }
     if (!current) return;
     const summaries = {};
-    const happens = {};
     bills.forEach((bill) => {
       const summary = getCachedSummary(bill.bill_no);
       if (summary) summaries[bill.bill_no] = summary.summary;
-      const happen = getLastHappen(bill.bill_no);
-      if (happen) happens[bill.bill_no] = { selection: happen.selection, result: happen.result };
     });
     compareActions.save({
       a, b,
       bills: { a: pickBill(bills[0]), b: pickBill(bills[1]) },
       rows: current.rows,
       summaries,
-      happens,
       savedAt: new Date().toISOString(),
     });
   }
@@ -125,9 +116,7 @@ export default function ComparePage({ knownBills = [], savedCompares = [], compa
             bill={bill}
             letter={bill.bill_no === a ? "A" : "B"}
             savedSummary={saved && Object.hasOwn(saved.summaries, bill.bill_no) ? saved.summaries[bill.bill_no] : undefined}
-            savedHappen={saved?.happens[bill.bill_no]}
             onSummary={saved ? addSummary : undefined}
-            onHappen={saved ? addHappen : undefined}
           />
         ))}
       </div>
@@ -143,17 +132,11 @@ export default function ComparePage({ knownBills = [], savedCompares = [], compa
   );
 }
 
-function ComparisonCard({ bill, letter, savedSummary, savedHappen, onSummary, onHappen }) {
+function ComparisonCard({ bill, letter, savedSummary, onSummary }) {
   const billNo = bill.bill_no;
   const [cardRef, { status, info }] = useBillInfo(billNo);
   const link = info?.link || bill.link || null;
-  // 비교 화면에서는 맞춤 요약을 요청하지 않고, 저장했거나 검색 화면에서 이미 받은 결과만 보여줍니다.
-  const happen = savedHappen || getLastHappen(billNo);
   const handleSummary = useCallback((summary) => onSummary?.(billNo, summary), [onSummary, billNo]);
-
-  useEffect(() => {
-    if (!savedHappen && happen) onHappen?.(billNo, happen);
-  }, [savedHappen, happen, onHappen, billNo]);
 
   return (
     <article className="comparison-card" ref={cardRef}>
@@ -164,12 +147,6 @@ function ComparisonCard({ bill, letter, savedSummary, savedHappen, onSummary, on
       <h2>{bill.bill_name}</h2>
       <BillMeta bill={bill} info={info} showNumber />
       <BillSummary bill={bill} initialSummary={savedSummary} onSummary={onSummary ? handleSummary : undefined} />
-      {happen && (
-        <details className="bill-original compare-personal">
-          <summary>AI 맞춤 요약 보기</summary>
-          <SavedPersonalResult entry={happen} renderStage={renderStage} />
-        </details>
-      )}
       {link ? (
         <a className="text-link" href={link} target="_blank" rel="noopener noreferrer">
           원문 보기<Icon name="external" size={15} /><span className="sr-only"> (새 탭)</span>
