@@ -171,28 +171,6 @@
   padding-top: 44px;
   padding-bottom: 32px;
 }
-/* 홈페이지 하단 데이터·안내 */
-.hero-meta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-  padding-block: 20px 28px;
-  border-top: 1px solid var(--line);
-  text-align: left;
-}
-.hero-meta > div:last-child {
-  text-align: right;
-}
-.hero-meta dt {
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-.hero-meta dd {
-  margin-top: 2px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-}
 .hero-title {
   display: inline-flex;
   align-items: center;
@@ -1070,15 +1048,6 @@
   align-items: center;
   gap: 12px;
 }
-/* 비교 카드 안의 맞춤 요약(읽기 전용): 접어 두고 펼치면 결과만 */
-.bill-original.compare-personal {
-  margin-top: 14px;
-}
-.compare-personal .personal-result {
-  margin-top: 10px;
-  padding-top: 0;
-  border-top: 0;
-}
 .compare-intro {
   color: var(--ink-muted);
   font-size: 17px;
@@ -1290,26 +1259,6 @@
   .search-hero.is-compact {
     padding-top: 24px;
     padding-bottom: 28px;
-  }
-  .hero-meta {
-    grid-template-columns: 1fr;
-    gap: 8px;
-    padding-bottom: 16px;
-    margin-bottom: 44px;
-  }
-  .hero-meta > div,
-  .hero-meta > div:nth-child(2),
-  .hero-meta > div:nth-child(3) {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 12px;
-    text-align: left;
-  }
-  .hero-meta dd {
-    margin-top: 0;
-    font-size: 14px;
-    text-align: right;
   }
   .hero-title {
     font-size: 42px;
@@ -1693,7 +1642,6 @@
 @media (max-width: 760px) {
   .side-nav { width: 100%; flex-wrap: wrap; }
   .side-nav a { flex: 1 1 calc(50% - 4px); justify-content: center; }
-  .hero-meta { margin-bottom: 0; }
 }
 
 /* ---------- 맞춤 요약: 이 법안이 적용되면? (README 8-7) ---------- */

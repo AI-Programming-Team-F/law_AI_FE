@@ -1,5 +1,6 @@
 // 저장한 비교: 로그인이 없어서 이 브라우저(localStorage)에만 보관합니다.
-// 비교 결과와 그때 받아 둔 AI 요약·맞춤 요약을 함께 저장해, 다시 열 때 서버에 AI를 다시 요청하지 않습니다.
+// 비교 결과와 그때 받아 둔 AI 요약을 함께 저장해, 다시 열 때 서버에 AI를 다시 요청하지 않습니다.
+// (예전에 저장한 항목에는 맞춤 요약 happens가 있을 수 있어 형식 검사만 하고 쓰지 않습니다.)
 export const SAVED_COMPARES_KEY = "beopan-itda:saved-compares:v1";
 
 const isText = (value) => typeof value === "string";
@@ -46,7 +47,7 @@ export function isSavedCompare(item) {
   return isBill(item.bills?.a, item.a) && isBill(item.bills?.b, item.b) &&
     isRows(item.rows) &&
     isSummaries(item.summaries, billNos) &&
-    isHappens(item.happens, billNos) &&
+    (item.happens === undefined || isHappens(item.happens, billNos)) &&
     isText(item.savedAt) && !Number.isNaN(Date.parse(item.savedAt));
 }
 
