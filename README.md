@@ -191,7 +191,16 @@ npm run dev
 
 설정 없이 `npm run dev`로 실제 서버와 연결된다. 로컬 BE를 사용하려면 `.env.local`에 `API_PROXY_TARGET=http://localhost:8000`을 설정하고 개발 서버를 다시 시작한다. 키·토큰은 FE 환경 변수에 넣지 않는다.
 
-정적 배포에서는 Vite 프록시가 실행되지 않는다. 호스팅에서 `/api/*`를 BE `/*`로 프록시하거나, `VITE_API_BASE_URL=https://law-ai-be-production.up.railway.app`로 빌드하고 BE에서 FE 배포 주소의 CORS를 허용해야 한다. 11월 18일 localhost Origin으로 받은 검색 응답에는 CORS 허용 헤더가 없어 직접 호출하는 정적 배포는 BE 설정 확인이 필요하다.
+### Vercel 배포
+
+`vercel.json`이 배포 설정이다. 환경 변수 없이 배포한다(`VITE_API_BASE_URL`을 넣지 않는다).
+
+- `/api/:path*` → Railway `/:path*`로 전달한다. 개발 서버 프록시와 같은 동작이며 같은 주소로 요청하므로 BE CORS 설정이 필요 없다.
+- 나머지 주소(`/search`, `/compare?a=…&b=…`, `/saved`)는 `index.html`로 보내 새로고침·공유 링크에서도 화면이 열린다. 실제 파일(JS·CSS·이미지)은 Vercel이 먼저 제공한다.
+- 연결: Vercel → Add New → Project → 이 저장소 Import → Framework `Vite`(Build `npm run build`, Output `dist`) → Deploy. main에 머지되면 자동 배포되고, PR 브랜치마다 미리보기 주소가 생긴다.
+- 오래 걸리는 AI 요청(비교·맞춤 요약)이 Vercel 전달 시간 제한으로 504가 나면, 아래 직접 호출 방식으로 바꾸고 BE에 배포 주소 CORS 허용을 요청한다.
+
+정적 배포에서는 Vite 프록시가 실행되지 않는다. 호스팅에서 `/api/*`를 BE `/*`로 프록시하거나(Vercel은 위 `vercel.json`), `VITE_API_BASE_URL=https://law-ai-be-production.up.railway.app`로 빌드하고 BE에서 FE 배포 주소의 CORS를 허용해야 한다. 11월 18일 localhost Origin으로 받은 검색 응답에는 CORS 허용 헤더가 없어 직접 호출하는 정적 배포는 BE 설정 확인이 필요하다.
 
 데이터 수집은 BE 서버가 켜질 때 자동으로 시작한다(`/preprocess` API는 삭제됨). 준비가 끝나기 전 검색은 `preprocess: false`로 응답하고, 화면은 준비 중으로 안내한다.
 
@@ -418,6 +427,8 @@ git push -u origin feature/search-page
 - [x] 서버 프록시 설정 (`/api`)
 - [x] 배포 서버 OpenAPI에 맞춰 README 8장·요청 형식 갱신
 - [ ] 누락 필드·상태 변환·배포 CORS BE와 최종 확인
+- [x] Vercel 배포 설정 (`vercel.json`: `/api` 전달, 화면 주소 → `index.html`)
+- [ ] Vercel 프로젝트 연결·배포 후 검색·요약·비교·공유 링크 새로고침 확인
 - [x] mock 데이터로 검색 화면
 - [x] 법률안 카드 (상태 뱃지, AI 요약, 매칭 키워드)
 - [x] 검색어 형광펜을 법안 제목에도 적용 (원문 링크 유무 모두 지원)
