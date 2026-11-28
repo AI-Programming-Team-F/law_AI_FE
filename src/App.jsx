@@ -138,6 +138,8 @@ function AppLayout() {
   const compareUrl = selectedBills.length === 2
     ? `/compare?${new URLSearchParams({ a: selectedBills[0].bill_no, b: selectedBills[1].bill_no })}`
     : "/compare";
+  // 사이드바 '저장한 법안' 숫자와 홈 카드 건수: 저장한 법안 + 저장한 비교
+  const savedCount = savedBills.length + savedCompares.length;
   const searchPage = (
     <SearchPage
       key={`${location.pathname}:${homeKey}`}
@@ -148,13 +150,12 @@ function AppLayout() {
       selectedBills={selectedBills}
       onToggleCompare={toggleCompare}
       savedBills={savedBills}
+      savedCount={savedCount}
       onToggleSave={toggleSave}
     />
   );
 
   const showTray = location.pathname !== "/compare" && selectedBills.length > 0;
-  // 사이드바 '저장한 법안' 숫자: 저장한 법안 + 저장한 비교
-  const savedCount = savedBills.length + savedCompares.length;
 
   return (
     <div className="app-shell">
