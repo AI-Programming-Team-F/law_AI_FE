@@ -22,6 +22,7 @@ export default function SearchPage({
   selectedBills,
   onToggleCompare,
   savedBills,
+  savedCount = savedBills.length,
   onToggleSave,
 }) {
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ export default function SearchPage({
             </span>
             <h2>저장한 법안</h2>
             <p>관심 있는 법안을 저장하고<br />한곳에서 다시 살펴보세요.</p>
-            <span className="feature-pill">저장한 법안 {savedBills.length}건 보기 →</span>
+            <span className="feature-pill">저장한 법안·비교 {savedCount}건 보기 →</span>
           </Link>
           <Link className="feature-card feature-link" to={compareUrl}>
             <span className="feature-icon">
